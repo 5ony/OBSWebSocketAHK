@@ -87,16 +87,18 @@ obsc.GetVersion()
 
 The received data contains the full response from OBS in AutoHotKey object format. For the data format, consult the [OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md)
 
-Every request is implemented with parameters. Object parameters handle AHK objects, but there is one exception; AHK's true and false values are only shorthands for 1 and 0 values. To circumvent this, true and false values should be handled as strings, and a modified JSON.ahk will convert every (!) string "true" and "false" values to JavaScript's true and false values.
+Every request is implemented with parameters. Object parameters handle AHK objects, but there is one exception; AHK's true and false values are only shorthands for 1 and 0 values. To circumvent this, true and false values should be handled as strings. To help this, you can use the Boolean() helper function (see example below).
 
-Note that because of this limitation, you cannot use "true" or "false" strings as string values when sending requests to OBS.
+This library will convert every (and I mean EVERY) string "true" and "false" values to JavaScript's true and false values. Note that because of this limitation, you cannot use "true" or "false" strings as text values when sending requests to OBS.
 
 For example muting the microphone:
 
 ```
+obsc.SetInputMute("Mic/Aux", true) ; this will throw error
+
 obsc.SetInputMute("Mic/Aux", "true") ; this is the way
 
-obsc.SetInputMute("Mic/Aux", true) ; this will throw error
+obsc.SetInputMute("Mic/Aux", obsc.Boolean(true)) ; this is even better
 ```
 
 ## ⚡ Event handling
