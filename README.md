@@ -20,15 +20,17 @@ All available OBS websocket functions are implemented, but not all tested.
 
 [OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md) should be the no.1 resource when it comes to actions, events, parameters and data structures.
 
-## Why would you want to use this script?
+## 🤔 Why would you want to use this script?
 
 Let be here some inspiration:
 
-	* Be right back! - Pressing one key (defined in AHK) to toggle the microphone, and a "Be right back" scene item (working example in this repo)
-	* activate a scene/item/filter when health is low in a game (by watching health bar pixels) or an effect is on
-	* changing to a "Score screen" opens a local excel table where results can be displayed, changed and shown to the audience; pressing another hotkey would change back the scene and close the excel
+- Be right back! - Pressing one key (defined in AHK) to toggle the microphone, and a "Be right back" scene item (working example in this repo)
 
-## Gratitude
+- activate a scene/item/filter when health is low in a game (by watching health bar pixels) or an effect is on
+
+- changing to a "Score screen" opens a local excel table where results can be displayed, changed and shown to the audience; pressing another hotkey would change back the scene and close the excel
+
+## 🙏 Gratitude
 
 Thanks for [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk), Coco's [JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON) and of course OBS websocket and OBS Studio guys.
 
@@ -38,11 +40,11 @@ If you want to thank me with a coffee, I thank you for that, you can do it here:
 
 I am open for suggestions! Let me know what you think about this script or how can I improve it. Also, I would love to see what processes you have implemented with this script.
 
-## Initialization
+## 💥 Initialization
 
 First, open OBS Studio, and navigate to Tools -> obs-websocket Settings, and leave the window open.
 
-Click on Show Connect Info button, and remove the Server Password. At the moment password is not handled by this AHK class.
+Click on Show Connect Info button, and remove the Server Password. At the moment password is not handled by this AHK library (but it is planned).
 
 Copy the full IP address and port. Always the full IP address should be added at the initialization ("localhost:4455" will not be enough), even if OBS runs on the same computer as this script.
 
@@ -56,14 +58,13 @@ class MyOBSController extends OBSWebSocket {
 }
 
 obsc := new MyOBSController("ws://192.168.1.100:4455/")
-
 ```
 
 For testing purposes you might want to check whether the connection to OBS was successful. For this, watch the obs-websocket Settings window. After you start the AHK script, the Connected WebSocket Sessions list should show a new connection.
 
 This code above is so basic, it only connects to OBS Studio, and that is it.
 
-## Requests to OBS Studio
+## 🔄 Requests to OBS Studio
 
 Requests towards OBS Studio usually have a response as well. Responses need a separate class function with the name of the request + 'Response'.
 
@@ -98,7 +99,7 @@ obsc.SetInputMute("Mic/Aux", "true") ; this is the way
 obsc.SetInputMute("Mic/Aux", true) ; this will throw error
 ```
 
-## Event handling
+## ⚡ Event handling
 
 It is possible to subscribe to events coming from OBS. Check EventSubscription under OBSWebSocket.ahk for all the events. By default, events are dismissed to keep the unnecessary conversation between OBS and AHK on a minimum.
 
@@ -119,7 +120,7 @@ class MyOBSController extends OBSWebSocket {
 }
 ```
 
-## Examples
+## 🧐 Examples
 
 Note that most (not all) of the examples can be done by defining hotkeys in OBS Studio. These examples are here just to give you the basic synax of triggers, events and responses.
 
@@ -140,7 +141,6 @@ return
 Numpad2::
 obsws.SetCurrentProgramScene("Be right back")
 return
-
 ```
 
 ### Toggling microphone and scene with AHK hotkey
@@ -204,7 +204,6 @@ F12::
 	obsc.isVisible := !obsc.isVisible
 	obsc.SetSceneItemEnabled(obsc.sceneName, obsc.sceneItemId, obsc.Boolean(obsc.isVisible))
 	return
-
 ```
 
 ### Toggling microphone with AHK hotkey or in OBS toggles scene (example-toggling-microphone-with-ahk-hotkey-or-obs-toggles-scene.ahk)
@@ -280,19 +279,19 @@ Also, if the scene is changed, the infinite loop starts with `EventCurrentProgra
 
 Here we skip the infinite loop by checking the muted state and the active scene. We could even get the active scene and the muted state of the microphone and check all of them at once, but I think it is a good practice not to trust the saved states of AHK variables, but to rely on the real states coming from OBS Studio. It is possible to write a more effective code than this, I just want to keep this here to for clarity (or for complexity?); I advice to run this code in your head, just go get familiar with requests and effect of events. The code below runs without infinite loop.
 
-## Debugging
+## 🔍 Debugging
 
-### Websocket messages
+### ✉ Websocket messages
 
 Messages can be intercepted with [WireShark](https://www.wireshark.org).
 
 Set the adapter to "Adapter for loopback traffic capture", set display filter to websocket. Use the script and if there is any messages between OBS and your script, it will be listed. You can check the message content. If the message content is masked, you can unmask it. Note that you might need the connection phase too for this to unmask the raw data.
 
-### Emojis
+### 🙂 Emojis
 
 If you are using emojis (in scene names, input names, or just in general), make sure you save the files with "UTF-8 with BOM" option. This can be set even in Windows Notepad. You might just have been saved from "Scene not found" error messages.
 
-## To do (Might do)
+## 🚧 To do (Might do)
 
 * Screenshots from OBS settings, Wireshark and UTF-8 with BOM
 * Connection with password
