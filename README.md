@@ -23,9 +23,10 @@ All available OBS websocket functions are implemented, but not all tested.
 ## Why would you want to use this script?
 
 Let be here some inspiration:
-	- Be right back! - Pressing one key (defined in AHK) to toggle the microphone, and a "Be right back" scene item (working example in this repo)
-	- activate a scene/item/filter when health is low in a game (by watching health bar pixels) or an effect is on
-	- changing to a "Score screen" opens a local excel table where results can be displayed, changed and shown to the audience; pressing another hotkey would change back the scene and close the excel
+
+	* Be right back! - Pressing one key (defined in AHK) to toggle the microphone, and a "Be right back" scene item (working example in this repo)
+	* activate a scene/item/filter when health is low in a game (by watching health bar pixels) or an effect is on
+	* changing to a "Score screen" opens a local excel table where results can be displayed, changed and shown to the audience; pressing another hotkey would change back the scene and close the excel
 
 ## Gratitude
 
@@ -33,7 +34,7 @@ Thanks for [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk)
 
 If you want to thank me with a coffee, I thank you for that, you can do it here:
 
-ko_fi: barsony
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/N4N6FX30H)
 
 I am open for suggestions! Let me know what you think about this script or how can I improve it. Also, I would love to see what processes you have implemented with this script.
 
