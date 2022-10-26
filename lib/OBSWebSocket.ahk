@@ -127,7 +127,6 @@ class OBSWebSocket extends WebSocket
 			this[value.d.requestType . "Response"](value)
 		}		
 		if (value.op = this.WebSocketOpCode.Event) {
-			msgbox % value.d.eventType . "Event"
 			this[value.d.eventType . "Event"](value)
 		}
 	}

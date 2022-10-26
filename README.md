@@ -6,10 +6,9 @@ This AutoHotKey library handles OBS websocket version: 5.0.1
 
 Basic functionality tested with OBS Studio 28.0.3 (64 bit)
 
-You will need the following AHK libraries:
+You will need to put the following AHK libraries to a lib directory as well as this OBSWebSocket.ahk:
 
 [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk)
-
 [Coco's JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON)
 
 ⚠ This code is under development. I do not expect breaking changes in the near future, and it works as it is right now.

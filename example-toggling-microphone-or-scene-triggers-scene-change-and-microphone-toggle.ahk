@@ -31,4 +31,4 @@ obsc := new MyOBSController("ws://192.168.1.100:4455/", MyOBSController.EventSub
 
 F12::
 	obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
-return
+	return
