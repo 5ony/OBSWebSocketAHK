@@ -12,7 +12,7 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://192.168.1.100:4455/", MyOBSController.EventSubscription.Input)
+obsc := new MyOBSController("ws://192.168.1.100:4455/", 0, MyOBSController.EventSubscription.Input)
 
 F12::
 	obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))

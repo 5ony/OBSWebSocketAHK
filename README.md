@@ -6,14 +6,13 @@ This AutoHotKey library handles OBS websocket version: 5.0.1
 
 Basic functionality tested with OBS Studio 28.0.3 (64 bit)
 
-You will need to put the following AHK libraries to a lib directory as well as this OBSWebSocket.ahk:
+You will need the following AHK libraries too:
 
-[G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk)
-[Coco's JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON)
+- [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk)
+- [Coco's JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON)
+- [ahkscript/libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk)
 
 ⚠ This code is under development. I do not expect breaking changes in the near future, and it works as it is right now.
-
-⚠ At this stage only passwordless connection is implemented.
 
 All available OBS websocket functions are implemented, but not all tested.
 
@@ -31,23 +30,37 @@ Let be here some inspiration:
 
 ## 🙏 Gratitude
 
-Thanks for [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk), Coco's [JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON) and of course OBS websocket and OBS Studio guys.
+Thanks for [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk), [Coco's JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON), all [ahkscript contributors](https://github.com/ahkscript) and of course OBS websocket and OBS Studio guys.
 
-If you want to thank me with a coffee, I thank you for that, you can do it here:
+If you want to support me with a coffee, I thank you for that, you can do it here:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/N4N6FX30H)
 
 I am open for suggestions! Let me know what you think about this script or how can I improve it. Also, I would love to see what processes you have implemented with this script.
 
-## 💥 Initialization
+## 💥 Quick setup
 
-First, open OBS Studio, and navigate to Tools -> obs-websocket Settings, and leave the window open.
+- Download these codes, and put them under a lib directory
+	- [OBSWebSocket.ahk](https://github.com/5ony/OBSWebSocketAHK/blob/main/lib/OBSWebSocket.ahk)
+	- [WebSocket.ahk](https://github.com/G33kDude/WebSocket.ahk/blob/master/WebSocket.ahk)
+	- [JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON/blob/master/JSON.ahk)
+	- [libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk/blob/master/build/libcrypt.ahk)
 
-Click on Show Connect Info button, and remove the Server Password. At the moment password is not handled by this AHK library (but it is planned).
+- Open OBS Studio, and navigate to Tools -> obs-websocket Settings, and leave the window open.
+- Click on Show Connect Info button.
+- Remove the Server Password. You can use it with password too, but it might be easier to try it without password. Also, all of the examples are without password.
+- Copy the full IP address and port to your AHK script ("localhost:4455" will not be enough).
+- You can close the "Websocket connect info" window, but keep the "obs-websocket Settings" window open.
+- Create a simple script where the lib directory resides.
 
-Copy the full IP address and port. Always the full IP address should be added at the initialization ("localhost:4455" will not be enough), even if OBS runs on the same computer as this script.
+```
+#Include lib/OBSWebSocket.ahk
 
-In your AHK script you should create your own class of OBSWebSocket and initialize the OBS websocket AutoHotKey class:
+obsc := new OBSWebSocket("ws://192.168.1.100:4455/")
+```
+- You can run your script and the OBS's Connected WebSocket Sessions list should show a new connection.
+
+- For listening to OBS Studio responses and events you might want to create your own class of OBSWebSocket:
 
 ```
 #Include lib/OBSWebSocket.ahk
@@ -57,40 +70,42 @@ class MyOBSController extends OBSWebSocket {
 }
 
 obsc := new MyOBSController("ws://192.168.1.100:4455/")
+
+; or, if you are using password:
+; obsc := new MyOBSController("ws://192.168.1.100:4455/", "YourPasswordHere")
 ```
-
-For testing purposes you might want to check whether the connection to OBS was successful. For this, watch the obs-websocket Settings window. After you start the AHK script, the Connected WebSocket Sessions list should show a new connection.
-
-This code above is so basic, it only connects to OBS Studio, and that is it.
 
 ## 🔄 Requests to OBS Studio
 
-Requests towards OBS Studio usually have a response as well. Responses need a separate class function with the name of the request + 'Response'.
+Requests towards OBS Studio usually have a response as well. Responses need a separate class method with the name of the request + 'Response'.
 
-For example, checking OBS version is the following:
-
-`obsc.GetVersion()`
-
-However, this function does not return anything in itself. Let's define the response function before calling `GetVersion()`, by extending the OBSWebsocket class:
+For example, checking OBS version:
 
 ```
 class MyOBSController extends OBSWebSocket {
+
+	AfterIdentified() {
+		obsc.GetVersion()
+	}
+
 	GetVersionResponse(data) {
 		; 🧙 do your magic with data here ✨
 	}
 }
 
 obsc := new MyOBSController("ws://192.168.1.100:4455/")
-obsc.GetVersion()
 ```
+Note that:
+- `obsc.GetVersion()` (or any other method) cannot be called after creating a new OBSWebSocket instance, because the connection is still under negotiation. Connecting to OBS needs time, and when the connection is successful, `AfterIdentified()` method will be called (if it is defined).
+- `obsc.GetVersion()` does not return anything in itself, a callback has to be defined as `GetVersionResponse()`
 
-The received data contains the full response from OBS in AutoHotKey object format. For the data format, consult the [OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md)
+The received data contains the full response from OBS in AutoHotKey object format. For the data structure, consult the [OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md)
 
 Every request is implemented with parameters. Object parameters handle AHK objects, but there is one exception; AHK's true and false values are only shorthands for 1 and 0 values. To circumvent this, true and false values should be handled as strings. To help this, you can use the Boolean() helper function (see example below).
 
-This library will convert every (and I mean EVERY) string "true" and "false" values to JavaScript's true and false values. Note that because of this limitation, you cannot use "true" or "false" strings as text values when sending requests to OBS.
+This function will convert every (and I mean EVERY) outbound (towards OBS) string "true" and "false" values to JavaScript's true and false values. Note that because of this limitation, you cannot use "true" or "false" strings as text values when sending requests to OBS.
 
-For example muting the microphone:
+For example when muting the microphone:
 
 ```
 obsc.SetInputMute("Mic/Aux", true) ; this will throw error
@@ -102,10 +117,10 @@ obsc.SetInputMute("Mic/Aux", obsc.Boolean(true)) ; this is even better
 
 ## ⚡ Event handling
 
-It is possible to subscribe to events coming from OBS. Check EventSubscription under OBSWebSocket.ahk for all the events. By default, events are dismissed to keep the unnecessary conversation between OBS and AHK on a minimum.
+It is possible to subscribe to events coming from OBS at initialization. Check EventSubscription under OBSWebSocket.ahk for all the events. By default, events are dismissed to keep the unnecessary conversation between OBS and AHK on a minimum.
 
 To subscibe to events, list them at the class initialization:
-`obsc := new MyOBSController("ws://192.168.1.100:4455/", MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)`
+`obsc := new MyOBSController("ws://192.168.1.100:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)`
 
 Note the bitwise `|`, do not fall into the `||` or `&` or `&&` trap.
 
@@ -189,8 +204,6 @@ Scene items ("Sources" in OBS Studio) can be manipulated with a valid ID, and no
 
 In the example below we will change the visibility of the "Webcamera" scene item under "Gaming" scene. 
 
-Note the class extension, and also the `AfterIdentified()` method; this is a fixed name, and it is called when connection is established to OBS.
-
 ```
 #NoEnv
 SetBatchLines, -1
@@ -245,7 +258,7 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://192.168.1.100:4455/", MyOBSController.EventSubscription.Input)
+obsc := new MyOBSController("ws://192.168.1.100:4455/", 0, MyOBSController.EventSubscription.Input)
 
 F12::
 	obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
@@ -287,7 +300,7 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://192.168.1.100:4455/", MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)
+obsc := new MyOBSController("ws://192.168.1.100:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)
 
 F12::
 	obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))

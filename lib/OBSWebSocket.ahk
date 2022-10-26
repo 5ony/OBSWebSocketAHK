@@ -20,6 +20,7 @@
 
 #Include ./lib/WebSocket.ahk
 #Include ./lib/JSON.ahk
+#Include ./lib/libcrypt.ahk
 
 class OBSWebSocket extends WebSocket
 {
@@ -101,9 +102,11 @@ class OBSWebSocket extends WebSocket
 	_rpcVersion := 0
 	_requestId := "OBSWebSocket-" . A_Now ; a simple id
 	_eventSubscriptions := 0
+	_pwd := 0
 
-	__New(websocketUrl, subscriptions := 0) {
+	__New(websocketUrl, pwd := 0, subscriptions := 0) {
 		this._eventSubscriptions := subscriptions
+		this._pwd := pwd
 		base.__New(websocketUrl)
 	}
 
@@ -114,7 +117,13 @@ class OBSWebSocket extends WebSocket
 		value := JSON.Load( Event.data )
 		if (value.op = this.WebSocketOpCode.Hello) {
 			this._rpcVersion := value.d.rpcVersion
-			this.Send("{""op"":" . this.WebSocketOpCode.Identify . ",""d"": {""rpcVersion"":" . this._rpcVersion . ", ""eventSubscriptions"":" . this._eventSubscriptions . "}}")
+			msgBox, % Event.data
+
+			helloAnswer := {op: this.WebSocketOpCode.Identify,d: {rpcVersion: this._rpcVersion, eventSubscriptions: this._eventSubscriptions}}
+			if (value.d.authentication) {
+				helloAnswer.d.authentication := this.__GenerateSecretHash(value.d.authentication)
+			}
+			this.Send(this.__ReplaceBooleanValuesInJSON(helloAnswer))
 		}
 		if (value.op = this.WebSocketOpCode.Identified) {
 			this["AfterIdentified"]()
@@ -144,6 +153,16 @@ class OBSWebSocket extends WebSocket
 	__Delete() {
 		MsgBox, Exiting
 		ExitApp
+	}
+
+	__GenerateSecretHash(helloResult) {
+		hex := LC_SHA256(this._pwd . helloResult.salt)
+		LC_Hex2Bin(b64Secret, hex)
+		LC_Base64_Encode(b64SecretChallenge, b64Secret, StrLen(hex) / 2)
+		hex := LC_SHA256(b64SecretChallenge . helloResult.challenge)
+		LC_Hex2Bin(b64Secret, hex)
+		LC_Base64_Encode(authentication, b64Secret, StrLen(hex) / 2)
+		return authentication
 	}
 
 	__ReplaceBooleanValuesInJSON(obj) {
