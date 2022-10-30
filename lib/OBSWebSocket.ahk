@@ -169,7 +169,7 @@ class OBSWebSocket extends WebSocket
 		string := JSON.Dump(obj)
 		string := StrReplace(string, """true""", "true")
 		string := StrReplace(string, """false""", "false")
-		string := RegExReplace(string, "(""(\d+\.*\d*)"")", "$2")
+		string := RegExReplace(string, "(""(-*\d+\.*\d*)"")", "$2")
 		return string
 	}
 
