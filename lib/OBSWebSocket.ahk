@@ -117,7 +117,7 @@ class OBSWebSocket extends WebSocket
 		value := JSON.Load( Event.data )
 		if (value.op = this.WebSocketOpCode.Hello) {
 			this._rpcVersion := value.d.rpcVersion
-			msgBox, % Event.data
+			; msgBox, % Event.data
 
 			helloAnswer := {op: this.WebSocketOpCode.Identify,d: {rpcVersion: this._rpcVersion, eventSubscriptions: this._eventSubscriptions}}
 			if (value.d.authentication) {
