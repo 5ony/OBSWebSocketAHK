@@ -312,7 +312,7 @@ Also, if the scene is changed, the infinite loop starts with `EventCurrentProgra
 
 Here we skip the infinite loop by checking the muted state and the active scene. We could even get the active scene and the muted state of the microphone and check all of them at once, but I think it is a good practice not to trust the saved states of AHK variables, but to rely on the real states coming from OBS Studio. It is possible to write a more effective code than this, I just want to keep this here to for clarity (or for complexity?); I advice to run this code in your head, just go get familiar with requests and effect of events. The code below runs without infinite loop.
 
-### Toggling all scene items in one scene (example-toggle-all-scene-elements.ahk)
+### Toggling any scene items (sources) in one scene (example-toggle-all-scene-elements.ahk)
 
 Imagine the following setup in OBS
 
@@ -377,7 +377,6 @@ If you are using emojis (in scene names, input names, or just in general), make 
 ## 🚧 To do (Might do)
 
 * Screenshots from OBS settings, Wireshark and UTF-8 with BOM
-* Connection with password
 * Internet Explorer (websocket) throws error when connection is interrupted
 * Automatic connection retry
 * Automatic recovery from errors
