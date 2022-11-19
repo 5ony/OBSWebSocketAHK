@@ -312,6 +312,56 @@ Also, if the scene is changed, the infinite loop starts with `EventCurrentProgra
 
 Here we skip the infinite loop by checking the muted state and the active scene. We could even get the active scene and the muted state of the microphone and check all of them at once, but I think it is a good practice not to trust the saved states of AHK variables, but to rely on the real states coming from OBS Studio. It is possible to write a more effective code than this, I just want to keep this here to for clarity (or for complexity?); I advice to run this code in your head, just go get familiar with requests and effect of events. The code below runs without infinite loop.
 
+### Toggling all scene items in one scene (example-toggle-all-scene-elements.ahk)
+
+Imagine the following setup in OBS
+
+![Four scene items in one scene](example-toggle-all-scene-elements.jpg)
+
+The scene name is Scene, and there are four different scene items (sources).
+You can enable/disable the selected scene items with this script below with F9-F12.
+Note that there is no mechanism implemented here to handle changes coming from OBS.
+
+```
+#NoEnv
+SetBatchLines, -1
+
+#Include lib/ObsWebSocket.ahk
+
+class MyOBSController extends ObsWebSocket {
+
+	sceneName := "Scene"
+	sceneItemsByName := {}
+
+	AfterIdentified() {
+		this.GetSceneItemList(this.sceneName)
+	}
+
+	GetSceneItemListResponse(data) {
+		For Key, sceneItemData in data.d.responseData.sceneItems
+		{
+			this.sceneItemsByName[sceneItemData.sourceName] := {enabled: sceneItemData.sceneItemEnabled, id: sceneItemData.sceneItemId, name: sceneItemData.sourceName}
+		}
+	}
+
+	toggleSceneItem(sceneItem) {
+		if (!this.sceneItemsByName[sceneItem]) {
+			return
+		}
+		this.sceneItemsByName[sceneItem].enabled := !this.sceneItemsByName[sceneItem].enabled
+		this.SetSceneItemEnabled(this.sceneName, this.sceneItemsByName[sceneItem].id, this.Boolean(this.sceneItemsByName[sceneItem].enabled))
+	}
+
+}
+
+obsc := new MyOBSController("ws://192.168.1.68:4455/")
+
+F9::obsc.toggleSceneItem("Video Capture Device")
+F10::obsc.toggleSceneItem("Audio Input Capture")
+F11::obsc.toggleSceneItem("Image")
+F12::obsc.toggleSceneItem("Display Capture")
+```
+
 ## 🔍 Debugging
 
 ### ✉ Websocket messages
