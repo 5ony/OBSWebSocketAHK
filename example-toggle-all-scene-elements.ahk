@@ -29,7 +29,7 @@ class MyOBSController extends ObsWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://192.168.1.68:4455/")
+obsc := new MyOBSController("ws://127.0.0.1:4455/")
 
 F9::obsc.toggleSceneItem("Video Capture Device")
 F10::obsc.toggleSceneItem("Audio Input Capture")

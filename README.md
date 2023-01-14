@@ -2,9 +2,11 @@
 
 Handling OBS Studio via WebSocket with AutoHotKey.
 
+Get to the point 🡺 check the first script under [Examples](#examples)
+
 This AutoHotKey library handles OBS websocket version: 5.0.1
 
-Basic functionality tested with OBS Studio 28.0.3 (64 bit)
+Basic functionality tested with OBS Studio 28.0.3 (64 bit), 29.0.0
 
 You will need the following AHK libraries too:
 
@@ -49,14 +51,14 @@ I am open for suggestions! Let me know what you think about this script or how c
 - Open OBS Studio, and navigate to Tools -> obs-websocket Settings, and leave the window open.
 - Click on Show Connect Info button.
 - Remove the Server Password. You can use it with password too, but it might be easier to try it without password. Also, all of the examples are without password.
-- Copy the full IP address and port to your AHK script ("localhost:4455" will not be enough).
+- Copy the full IP address and port to your AHK script ("localhost:4455" will not be enough, but "127.0.0.1:4455" works fine).
 - You can close the "Websocket connect info" window, but keep the "obs-websocket Settings" window open.
 - Create a simple script where the lib directory resides.
 
 ```
 #Include lib/OBSWebSocket.ahk
 
-obsc := new OBSWebSocket("ws://192.168.1.100:4455/")
+obsc := new OBSWebSocket("ws://127.0.0.1:4455/")
 ```
 - You can run your script and the OBS's Connected WebSocket Sessions list should show a new connection.
 
@@ -69,10 +71,10 @@ class MyOBSController extends OBSWebSocket {
 	; your complex functionality comes here
 }
 
-obsc := new MyOBSController("ws://192.168.1.100:4455/")
+obsc := new MyOBSController("ws://127.0.0.1:4455/")
 
 ; or, if you are using password:
-; obsc := new MyOBSController("ws://192.168.1.100:4455/", "YourPasswordHere")
+; obsc := new MyOBSController("ws://127.0.0.1:4455/", "YourPasswordHere")
 ```
 
 ## 🔄 Requests to OBS Studio
@@ -93,7 +95,7 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://192.168.1.100:4455/")
+obsc := new MyOBSController("ws://127.0.0.1:4455/")
 ```
 Note that:
 - `obsc.GetVersion()` (or any other method) cannot be called after creating a new OBSWebSocket instance, because the connection is still under negotiation. Connecting to OBS needs time, and when the connection is successful, `AfterIdentified()` method will be called (if it is defined).
@@ -120,7 +122,7 @@ obsc.SetInputMute("Mic/Aux", obsc.Boolean(true)) ; this is even better
 It is possible to subscribe to events coming from OBS at initialization. Check EventSubscription under OBSWebSocket.ahk for all the events. By default, events are dismissed to keep the unnecessary conversation between OBS and AHK on a minimum.
 
 To subscibe to events, list them at the class initialization:
-`obsc := new MyOBSController("ws://192.168.1.100:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)`
+`obsc := new MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)`
 
 Note the bitwise `|`, do not fall into the `||` or `&` or `&&` trap.
 
@@ -140,6 +142,82 @@ class MyOBSController extends OBSWebSocket {
 
 Note that most (not all) of the examples can be done by defining hotkeys in OBS Studio. These examples are here just to give you the basic synax of triggers, events and responses.
 
+### Toggling scenes and scene items (sources) (example-scene-and-scene-item-changer.ahk)
+
+Basically this is the scipt you might want to extend. No explanation here, but if you need a deeper knowledge about the mechanism, you might want to check all other scripts below this one.
+
+```
+#NoEnv
+SetBatchLines, -1
+
+#Include lib/ObsWebSocket.ahk
+
+class MyOBSController extends ObsWebSocket {
+
+	state :=
+
+	AfterIdentified() {
+		this.GetCurrentProgramScene()
+	}
+
+	GetSceneItemListResponse(data) {
+		sceneItemIdsByName := {}
+		For Key, sceneItemData in data.d.responseData.sceneItems
+		{
+			sceneItemIdsByName[sceneItemData.sourceName] := sceneItemData.sceneItemId
+		}
+
+		; this state check is not needed for a simple script such as this one,
+		; but might come handy if the events getting more complex
+		if (this.state && this.state.name = "toggleSceneItem") {
+			this.SetSceneItemEnabled(this.state.sceneName, sceneItemIdsByName[this.state.sceneItem], this.Boolean(this.state.isVisible))
+		}
+	}
+
+	toggleSceneItem(sceneName, sceneItem, isVisible := -1) {
+		this.state := { name: "toggleSceneItem", sceneName: sceneName, sceneItem: sceneItem, isVisible: isVisible }
+		this.GetSceneItemList(sceneName)
+	}
+
+	changeScene(sceneName) {
+		this.SetCurrentProgramScene(sceneName)
+	}
+
+}
+
+obsc := new MyOBSController("ws://127.0.0.1:4455/")
+
+; set active scene to SceneA
+Numpad1::
+	obsc.changeScene("SceneA")
+return
+
+; set active scene to SceneB and set ItemB to visible
+Numpad2::
+	obsc.changeScene("SceneB")
+	obsc.toggleSceneItem("SceneB", "ItemB", true)
+return
+
+; set active scene to SceneB and set ItemB to hidden
+Numpad3::
+	obsc.changeScene("SceneB")
+	obsc.toggleSceneItem("SceneB", "ItemB", false)
+return
+
+; set ItemC to visible on SceneC, doesn't matter if SceneC is visible or not
+Numpad4::
+	obsc.toggleSceneItem("SceneC", "ItemC", true)
+return
+
+; set ItemC to hidden on SceneC, doesn't matter if SceneC is visible or not
+Numpad5::
+	obsc.toggleSceneItem("SceneC", "ItemC", false)
+return
+```
+
+Notes for this script:
+While websocket address as "localhost" does not work, using localhost IP address (127.0.0.1) works.
+
 ### Toggle a scene (example-toggle-a-scene.ahk)
 
 Simplest script to change scenes. If you do not want to receive any data, and do not care about any events, you do not need to create a new class.
@@ -147,7 +225,7 @@ Simplest script to change scenes. If you do not want to receive any data, and do
 ```
 #Include lib/OBSWebSocket.ahk
 
-obsws := new OBSWebSocket("ws://192.168.1.100:4455/")
+obsws := new OBSWebSocket("ws://127.0.0.1:4455/")
 return
 
 Numpad1::
@@ -166,7 +244,7 @@ You need to add a source "Desktop" and apply a Color Correction and a Sharpen fi
 ```
 #Include lib/OBSWebSocket.ahk
 
-obsc := new OBSWebSocket("ws://192.168.1.100:4455/")
+obsc := new OBSWebSocket("ws://127.0.0.1:4455/")
 
 F12::
 	filterSettings := {"brightness":0.0, "color_add":0, "color_multiply":16777215, "contrast":4.0, "gamma":0.0, "hue_shift":180, "opacity":1.0, "saturation":0.0}
@@ -188,7 +266,7 @@ Again, no need for extending the class, if a simple eventless and responseless m
 #Include lib/OBSWebSocket.ahk
 
 muted := false
-obsws := new OBSWebSocket("ws://192.168.1.100:4455/")
+obsws := new OBSWebSocket("ws://127.0.0.1:4455/")
 
 F12::
 	muted := !muted
@@ -229,7 +307,7 @@ class MyOBSController extends OBSWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://192.168.1.100:4455/")
+obsc := new MyOBSController("ws://127.0.0.1:4455/")
 
 F12::
 	if (obsc.sceneItemId = -1)
@@ -258,7 +336,7 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://192.168.1.100:4455/", 0, MyOBSController.EventSubscription.Input)
+obsc := new MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Input)
 
 F12::
 	obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
@@ -300,7 +378,7 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://192.168.1.100:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)
+obsc := new MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)
 
 F12::
 	obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
@@ -354,13 +432,18 @@ class MyOBSController extends ObsWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://192.168.1.68:4455/")
+obsc := new MyOBSController("ws://127.0.0.1:4455/")
 
 F9::obsc.toggleSceneItem("Video Capture Device")
 F10::obsc.toggleSceneItem("Audio Input Capture")
 F11::obsc.toggleSceneItem("Image")
 F12::obsc.toggleSceneItem("Display Capture")
 ```
+
+## General tips
+
+When changing scenes It is better to use SceneTransitionEnded event instead of CurrentProgramSceneChanged, because the latter one will trigger two changes: with the scene we are changing from and with the new one we are changing to.
+SceneTransitionEnded will be triggered only once with the new scene.
 
 ## 🔍 Debugging
 

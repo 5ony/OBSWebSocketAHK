@@ -22,7 +22,7 @@ class MyOBSController extends OBSWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://192.168.1.100:4455/")
+obsc := new MyOBSController("ws://127.0.0.1:4455/")
 
 F12::
 	if (obsc.sceneItemId = -1)

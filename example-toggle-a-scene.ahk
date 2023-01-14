@@ -1,6 +1,6 @@
 #Include lib/OBSWebSocket.ahk
 
-obsc := new OBSWebSocket("ws://192.168.1.100:4455/")
+obsc := new OBSWebSocket("ws://127.0.0.1:4455/")
 return
 
 Numpad1::
