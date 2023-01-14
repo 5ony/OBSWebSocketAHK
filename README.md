@@ -2,7 +2,7 @@
 
 Handling OBS Studio via WebSocket with AutoHotKey.
 
-Get to the point 🡺 check the first script under [Examples](#examples)
+Get to the point 🡺 check the first script under [Examples](#-examples)
 
 This AutoHotKey library handles OBS websocket version: 5.0.1
 
@@ -442,7 +442,7 @@ F12::obsc.toggleSceneItem("Display Capture")
 
 ## General tips
 
-When changing scenes It is better to use SceneTransitionEnded event instead of CurrentProgramSceneChanged, because the latter one will trigger two changes: with the scene we are changing from and with the new one we are changing to.
+When changing scenes it is easier to use SceneTransitionEnded event instead of CurrentProgramSceneChanged, because the latter one will trigger two changes: with the scene we are changing from and with the new one we are changing to.
 SceneTransitionEnded will be triggered only once with the new scene.
 
 ## 🔍 Debugging
