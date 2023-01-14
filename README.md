@@ -142,7 +142,9 @@ class MyOBSController extends OBSWebSocket {
 
 Note that most (not all) of the examples can be done by defining hotkeys in OBS Studio. These examples are here just to give you the basic synax of triggers, events and responses.
 
-### Toggling scenes and scene items (sources) (example-scene-and-scene-item-changer.ahk)
+### Toggling scenes and scene items (sources)
+
+[example-scene-and-scene-item-changer.ahk](example-scene-and-scene-item-changer.ahk)
 
 Basically this is the scipt you might want to extend. No explanation here, but if you need a deeper knowledge about the mechanism, you might want to check all other scripts below this one.
 
@@ -218,7 +220,9 @@ return
 Notes for this script:
 While websocket address as "localhost" does not work, using localhost IP address (127.0.0.1) works.
 
-### Toggle a scene (example-toggle-a-scene.ahk)
+### Toggle a scene
+
+[example-toggle-a-scene.ahk](example-toggle-a-scene.ahk)
 
 Simplest script to change scenes. If you do not want to receive any data, and do not care about any events, you do not need to create a new class.
 
@@ -237,7 +241,9 @@ obsws.SetCurrentProgramScene("Be right back")
 return
 ```
 
-### Toggle filter settings (example-filter-settings.ahk)
+### Toggle filter settings
+
+[example-filter-settings.ahk](example-filter-settings.ahk)
 
 You need to add a source "Desktop" and apply a Color Correction and a Sharpen filter to it, otherwise there will be errors.
 
@@ -276,7 +282,9 @@ return
 ```
 
 
-### Toggle a scene element (example-toggle-a-scene-element.ahk)
+### Toggle a scene element
+
+[example-toggle-a-scene-element.ahk](example-toggle-a-scene-element.ahk)
 
 Scene items ("Sources" in OBS Studio) can be manipulated with a valid ID, and not by their names. To read the ID, first we have to find it by name on a given scene.
 
@@ -317,7 +325,9 @@ F12::
 	return
 ```
 
-### Toggling microphone with AHK hotkey or in OBS toggles scene (example-toggling-microphone-with-ahk-hotkey-or-obs-toggles-scene.ahk)
+### Toggling microphone with AHK hotkey or in OBS toggles scene 
+
+[example-toggling-microphone-with-ahk-hotkey-or-obs-toggles-scene.ahk](example-toggling-microphone-with-ahk-hotkey-or-obs-toggles-scene.ahk)
 
 This script will allow you to change the scene when the microphone is muted with F12 (defined in this script), by clicking on the speaker icon in OBS, or by using an OBS hotkey.
 
@@ -390,7 +400,9 @@ Also, if the scene is changed, the infinite loop starts with `EventCurrentProgra
 
 Here we skip the infinite loop by checking the muted state and the active scene. We could even get the active scene and the muted state of the microphone and check all of them at once, but I think it is a good practice not to trust the saved states of AHK variables, but to rely on the real states coming from OBS Studio. It is possible to write a more effective code than this, I just want to keep this here to for clarity (or for complexity?); I advice to run this code in your head, just go get familiar with requests and effect of events. The code below runs without infinite loop.
 
-### Toggling any scene items (sources) in one scene (example-toggle-all-scene-elements.ahk)
+### Toggling any scene items (sources) in one scene
+
+[example-toggle-all-scene-elements.ahk](example-toggle-all-scene-elements.ahk)
 
 Imagine the following setup in OBS
 
