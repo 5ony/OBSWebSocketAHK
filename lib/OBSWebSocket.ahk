@@ -1,4 +1,3 @@
-
 /**
  * Lib: OBSWebSocket.ahk
  *     OBS Studio WebScocket library for AutoHotkey
@@ -8,9 +7,10 @@
  *     Latest version of AutoHotkey (v1.1+ or v2.0-a+)
  *     WebSocket.ahk - https://github.com/G33kDude/WebSocket.ahk
  *     JSON.ahk - https://github.com/cocobelgica/AutoHotkey-JSON
- * OBS WebSocket specifications: 
+ *     libcrypt.ahk - https://github.com/ahkscript/libcrypt.ahk
+ * OBS WebSocket specifications:
  *     https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md
- * 
+ *
  * Installation:
  *     Use #Include OBSWebSocket.ahk or copy into a function library folder and then
  *     use #Include <OBSWebSocket>
@@ -100,7 +100,7 @@ class OBSWebSocket extends WebSocket
 		, All: 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 16 | 1 << 17 | 1 << 18 | 1 << 19 }
 
 	_rpcVersion := 0
-	_requestId := "OBSWebSocket-" . A_Now ; a simple id
+	_requestId := 1 ; a simple id
 	_eventSubscriptions := 0
 	_pwd := 0
 
@@ -112,44 +112,41 @@ class OBSWebSocket extends WebSocket
 
 	OnOpen(Event) {
 	}
-	
+
 	OnMessage(Event) {
 		value := JSON.Load( Event.data )
-		if (value.op = this.WebSocketOpCode.Hello) {
-			this._rpcVersion := value.d.rpcVersion
+		if (value.op = this.WebSocketOpCode.RequestResponse) {
+			if (value.d.requestStatus.code != this.RequestStatus.Success) {
+				MsgBox, % "Error, RequestStatus " value.d.requestStatus.code " | " value.d.requestStatus.comment
+				return
+			}
 			; msgBox, % Event.data
+			this[value.d.requestType . "Response"](value)
+		} else if (value.op = this.WebSocketOpCode.Event) {
+			this[value.d.eventType . "Event"](value)
+		} else if (value.op = this.WebSocketOpCode.Hello) {
+			this._rpcVersion := value.d.rpcVersion
 
 			helloAnswer := {op: this.WebSocketOpCode.Identify,d: {rpcVersion: this._rpcVersion, eventSubscriptions: this._eventSubscriptions}}
 			if (value.d.authentication) {
 				helloAnswer.d.authentication := this.__GenerateSecretHash(value.d.authentication)
 			}
 			this.Send(this.__ReplaceBooleanValuesInJSON(helloAnswer))
-		}
-		if (value.op = this.WebSocketOpCode.Identified) {
+		} else if (value.op = this.WebSocketOpCode.Identified) {
 			this["AfterIdentified"]()
-		}
-		if (value.op = this.WebSocketOpCode.RequestResponse && this._requestId = value.d.requestId) {
-			if (value.d.requestStatus.code != this.RequestStatus.Success) {
-				MsgBox, % "Error, RequestStatus " value.d.requestStatus.code " | " value.d.requestStatus.comment
-				return
-			}
-			this[value.d.requestType . "Response"](value)
-		}		
-		if (value.op = this.WebSocketOpCode.Event) {
-			this[value.d.eventType . "Event"](value)
-		}
+		} 
 	}
 
 	OnClose(Event) {
 		MsgBox, % "Websocket Closed: " Event.data
 		this.Disconnect()
 	}
-	
+
 	OnError(Event) {
 		MsgBox, % "Websocket Error "
 		ExitApp
 	}
-	
+
 	__Delete() {
 		MsgBox, Exiting
 		ExitApp
@@ -181,85 +178,94 @@ class OBSWebSocket extends WebSocket
  		return booleanValue ? "true" : "false"
 	}
 
-	SendRequestToObs(requestTypeParam := "", requestData := 0) {
+	SendRequestToObs(requestTypeParam := "", requestId := 0, requestData := 0) {
 		requestType := this.__GetFunctionName(requestTypeParam)
-		request := { op: this.WebSocketOpCode.Request, d: { requestType: requestType, requestId: this._requestId }}
+		if (!requestId) {
+			requestId := this.GetRequestId()
+		}
+		request := { op: this.WebSocketOpCode.Request, d: { requestType: requestType, requestId: requestId }}
 		if (requestData != 0) {
 			request.d.requestData := requestData
 		}
 		this.Send(this.__ReplaceBooleanValuesInJSON(request))
 	}
 
-	GetVersion() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetRequestId() {
+		this._requestId := this._requestId + 1
+		return this._requestId
 	}
-	GetStats() {
-		this.SendRequestToObs(A_ThisFunc)
+
+	;------------ OBS WebSocket handling messages
+	GetVersion(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	BroadcastCustomEvent(eventData) {
-		this.SendRequestToObs(A_ThisFunc, eventData)
+	GetStats(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	CallVendorRequest(vendorName, requestType, requestData := 0) {
+	BroadcastCustomEvent(eventData, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, eventData)
+	}
+	CallVendorRequest(vendorName, requestType, requestData := 0, requestId := 0) {
 		data := {vendorName: vendorName, requestType: requestType}
 		if (requestData) {
 			data.requestData := requestData
 		}
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	GetHotkeyList() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetHotkeyList(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	TriggerHotkeyByName(hotkeyName) {
-		this.SendRequestToObs(A_ThisFunc, {hotkeyName: hotkeyName})
+	TriggerHotkeyByName(hotkeyName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {hotkeyName: hotkeyName})
 	}
-	TriggerHotkeyByKeySequence(keyId, shiftKey := "false", controlKey := "false", altKey := "false", commandKey := "false") {
+	TriggerHotkeyByKeySequence(keyId, shiftKey := "false", controlKey := "false", altKey := "false", commandKey := "false", requestId := 0) {
 		data := { keyId: keyId, shiftKey: shiftKey, controlKey: controlKey, altKey: altKey, commandKey: commandKey }
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	Sleep(sleepTime, inFrames := "false") {
+	Sleep(sleepTime, inFrames := "false", requestId := 0) {
 		data := { sleepMillis: sleepTime }
 		if (inFrames) {
 			data := { sleepFrames: sleepTime }
 		}
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	GetPersistentData(realm, slotName) {
-		this.SendRequestToObs(A_ThisFunc, {realm: realm, slotName: slotName})
+	GetPersistentData(realm, slotName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {realm: realm, slotName: slotName})
 	}
-	SetPersistentData(realm, slotName, slotValue) {
-		this.SendRequestToObs(A_ThisFunc, {realm: realm, slotName: slotName, slotValue: slotValue})
+	SetPersistentData(realm, slotName, slotValue, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {realm: realm, slotName: slotName, slotValue: slotValue})
 	}
-	GetSceneCollectionList() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetSceneCollectionList(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SetCurrentSceneCollection(sceneCollectionName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneCollectionName: sceneCollectionName})
+	SetCurrentSceneCollection(sceneCollectionName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneCollectionName: sceneCollectionName})
 	}
-	CreateSceneCollection(sceneCollectionName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneCollectionName: sceneCollectionName})
+	CreateSceneCollection(sceneCollectionName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneCollectionName: sceneCollectionName})
 	}
-	GetProfileList(currentProfileName, profiles) {
-		this.SendRequestToObs(A_ThisFunc, {currentProfileName: currentProfileName, profiles: profiles})
+	GetProfileList(currentProfileName, profiles, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {currentProfileName: currentProfileName, profiles: profiles})
 	}
-	SetCurrentProfile(profileName) {
-		this.SendRequestToObs(A_ThisFunc, {profileName: profileName})
+	SetCurrentProfile(profileName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {profileName: profileName})
 	}
-	CreateProfile(profileName) {
-		this.SendRequestToObs(A_ThisFunc, {profileName: profileName})
+	CreateProfile(profileName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {profileName: profileName})
 	}
-	RemoveProfile(profileName) {
-		this.SendRequestToObs(A_ThisFunc, {profileName: profileName})
+	RemoveProfile(profileName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {profileName: profileName})
 	}
-	GetProfileParameter(parameterCategory, parameterName) {
-		this.SendRequestToObs(A_ThisFunc, {parameterCategory: parameterCategory, parameterName: parameterName})
+	GetProfileParameter(parameterCategory, parameterName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {parameterCategory: parameterCategory, parameterName: parameterName})
 	}
-	SetProfileParameter(parameterCategory, parameterName, parameterValue) {
-		this.SendRequestToObs(A_ThisFunc, {parameterCategory: parameterCategory, parameterName: parameterName, parameterValue: parameterValue})
+	SetProfileParameter(parameterCategory, parameterName, parameterValue, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {parameterCategory: parameterCategory, parameterName: parameterName, parameterValue: parameterValue})
 	}
-	GetVideoSettings() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetVideoSettings(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SetVideoSettings(fpsNumerator := 0, fpsDenominator := 0, baseWidth := 0, baseHeight := 0, outputWidth := 0, outputHeight := 0) {
+	SetVideoSettings(fpsNumerator := 0, fpsDenominator := 0, baseWidth := 0, baseHeight := 0, outputWidth := 0, outputHeight := 0, requestId := 0) {
 		data := {}
 		if (fpsNumerator > 0) {
 			data.fpsNumerator := fpsNumerator
@@ -279,21 +285,21 @@ class OBSWebSocket extends WebSocket
 		if (outputHeight > 0) {
 			data.outputHeight := outputHeight
 		}
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	GetStreamServiceSettings() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetStreamServiceSettings(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SetStreamServiceSettings(streamServiceType, streamServiceSettings) {
-		this.SendRequestToObs(A_ThisFunc, {streamServiceType: streamServiceType, streamServiceSettings: streamServiceSettings})
+	SetStreamServiceSettings(streamServiceType, streamServiceSettings, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {streamServiceType: streamServiceType, streamServiceSettings: streamServiceSettings})
 	}
-	GetRecordDirectory(recordDirectory) {
-		this.SendRequestToObs(A_ThisFunc, {recordDirectory: recordDirectory})
+	GetRecordDirectory(recordDirectory, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {recordDirectory: recordDirectory})
 	}
-	GetSourceActive(sourceName) {
-		this.SendRequestToObs(A_ThisFunc, {sourceName: sourceName})
+	GetSourceActive(sourceName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sourceName: sourceName})
 	}
-	GetSourceScreenshot(sourceName, imageFormat, imageWidth := 0, imageHeight := 0, imageCompressionQuality := 0) {
+	GetSourceScreenshot(sourceName, imageFormat, imageWidth := 0, imageHeight := 0, imageCompressionQuality := 0, requestId := 0) {
 		data := {sourceName: sourceName, imageFormat: imageFormat}
 		if (imageWidth) {
 			data.imageWidth := imageWidth
@@ -304,9 +310,9 @@ class OBSWebSocket extends WebSocket
 		if (imageCompressionQuality) {
 			data.imageCompressionQuality := imageCompressionQuality
 		}
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	SaveSourceScreenshot(sourceName, imageFormat, imageFilePath, imageWidth := 0, imageHeight := 0, imageCompressionQuality := 0) {
+	SaveSourceScreenshot(sourceName, imageFormat, imageFilePath, imageWidth := 0, imageHeight := 0, imageCompressionQuality := 0, requestId := 0) {
 		data := {sourceName: sourceName, imageFormat: imageFormat}
 		if (imageWidth) {
 			data.imageWidth := imageWidth
@@ -317,39 +323,39 @@ class OBSWebSocket extends WebSocket
 		if (imageCompressionQuality) {
 			data.imageCompressionQuality := imageCompressionQuality
 		}
-		this.SendRequestToObs(A_ThisFunc)
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	GetSceneList() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetSceneList(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	GetGroupList(groups) {
-		this.SendRequestToObs(A_ThisFunc, {groups: groups})
+	GetGroupList(groups, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {groups: groups})
 	}
-	GetCurrentProgramScene() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetCurrentProgramScene(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SetCurrentProgramScene(sceneName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName})
+	SetCurrentProgramScene(sceneName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName})
 	}
-	GetCurrentPreviewScene() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetCurrentPreviewScene(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SetCurrentPreviewScene(sceneName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName})
+	SetCurrentPreviewScene(sceneName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName})
 	}
-	CreateScene(sceneName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName})
+	CreateScene(sceneName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName})
 	}
-	RemoveScene(sceneName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName})
+	RemoveScene(sceneName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName})
 	}
-	SetSceneName(sceneName, newSceneName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, newSceneName: newSceneName})
+	SetSceneName(sceneName, newSceneName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, newSceneName: newSceneName})
 	}
-	GetSceneSceneTransitionOverride(sceneName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName})
+	GetSceneSceneTransitionOverride(sceneName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName})
 	}
-	SetSceneSceneTransitionOverride(sceneName, transitionName := 0, transitionDuration := 0) {
+	SetSceneSceneTransitionOverride(sceneName, transitionName := 0, transitionDuration := 0, requestId := 0) {
 		data := {sceneName: sceneName}
 		if (transitionName) {
 			data.transitionName := transitionName
@@ -357,20 +363,22 @@ class OBSWebSocket extends WebSocket
 		if (transitionDuration) {
 			data.transitionDuration := transitionDuration
 		}
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	GetInputList(inputKind) {
-		data := {}
-		if (inputKind) data.inputKind := inputKind
-		this.SendRequestToObs(A_ThisFunc, data)
+	GetInputList(inputKind := "", requestId := 0) {
+		if (inputKind) {
+			this.SendRequestToObs(A_ThisFunc, requestId, {inputKind: inputKind})
+		} else {
+			this.SendRequestToObs(A_ThisFunc, requestId)
+		}
 	}
-	GetInputKindList(unversioned := "false") {
-		this.SendRequestToObs(A_ThisFunc, {unversioned: unversioned})
+	GetInputKindList(unversioned := "false", requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {unversioned: unversioned})
 	}
-	GetSpecialInputs() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetSpecialInputs(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	CreateInput(sceneName, inputName, inputKind, inputSettings := 0, sceneItemEnabled := 0) {
+	CreateInput(sceneName, inputName, inputKind, inputSettings := 0, sceneItemEnabled := 0, requestId := 0) {
 		data := {sceneName: sceneName, inputName: inputName, inputKind: inputKind}
 		if (inputSettings) {
 			data.inputSettings := inputSettings
@@ -378,306 +386,306 @@ class OBSWebSocket extends WebSocket
 		if (sceneItemEnabled) {
 			data.sceneItemEnabled := sceneItemEnabled
 		}
-		this.SendRequestToObs(A_ThisFunc)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	RemoveInput(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	RemoveInput(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetInputName(inputName, newInputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, newInputName: newInputName})
+	SetInputName(inputName, newInputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, newInputName: newInputName})
 	}
-	GetInputDefaultSettings(inputKind) {
-		this.SendRequestToObs(A_ThisFunc, {inputKind: inputKind})
+	GetInputDefaultSettings(inputKind, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputKind: inputKind})
 	}
-	GetInputSettings(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	GetInputSettings(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetInputSettings(inputName, inputSettings, overlay := 0) {
+	SetInputSettings(inputName, inputSettings, overlay := 0, requestId := 0) {
 		data := {inputName: inputName, inputSettings: inputSettings}
 		if (overlay) {
 			data.overlay := overlay
 		}
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	GetInputMute(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	GetInputMute(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetInputMute(inputName, inputMuted) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, inputMuted: inputMuted})
+	SetInputMute(inputName, inputMuted, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, inputMuted: inputMuted})
 	}
-	ToggleInputMute(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	ToggleInputMute(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	GetInputVolume(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	GetInputVolume(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetInputVolume(inputName, inputVolumeMul:=-1, inputVolumeDb:=0) {
+	SetInputVolume(inputName, inputVolumeMul:=-1, inputVolumeDb:=0, requestId := 0) {
 		if (inputVolumeMul > -1) {
 			data.inputVolumeMul := inputVolumeMul
 		}
 		if (inputVolumeDb) {
 			data.inputVolumeDb := inputVolumeDb
 		}
-		this.SendRequestToObs(A_ThisFunc)
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	GetInputAudioBalance(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	GetInputAudioBalance(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetInputAudioBalance(inputName, inputAudioBalance) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, inputAudioBalance: inputAudioBalance})
+	SetInputAudioBalance(inputName, inputAudioBalance, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, inputAudioBalance: inputAudioBalance})
 	}
-	GetInputAudioSyncOffset(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	GetInputAudioSyncOffset(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetInputAudioSyncOffset(inputName, inputAudioSyncOffset) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, inputAudioSyncOffset: inputAudioSyncOffset})
+	SetInputAudioSyncOffset(inputName, inputAudioSyncOffset, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, inputAudioSyncOffset: inputAudioSyncOffset})
 	}
-	GetInputAudioMonitorType(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	GetInputAudioMonitorType(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetInputAudioMonitorType(inputName, monitorType) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, monitorType: monitorType})
+	SetInputAudioMonitorType(inputName, monitorType, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, monitorType: monitorType})
 	}
-	GetInputAudioTracks(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	GetInputAudioTracks(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetInputAudioTracks(inputName, inputAudioTracks) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, inputAudioTracks: inputAudioTracks})
+	SetInputAudioTracks(inputName, inputAudioTracks, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, inputAudioTracks: inputAudioTracks})
 	}
-	GetInputPropertiesListPropertyItems(inputName, propertyName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, propertyName: propertyName})
+	GetInputPropertiesListPropertyItems(inputName, propertyName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, propertyName: propertyName})
 	}
-	PressInputPropertiesButton(inputName, propertyName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, propertyName: propertyName})
+	PressInputPropertiesButton(inputName, propertyName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, propertyName: propertyName})
 	}
-	GetTransitionKindList() {
-		this.SendRequestToObs(A_ThisFunc, {transitionKinds: transitionKinds})
+	GetTransitionKindList(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {transitionKinds: transitionKinds})
 	}
-	GetSceneTransitionList() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetSceneTransitionList(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	GetCurrentSceneTransition() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetCurrentSceneTransition(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SetCurrentSceneTransition(transitionName) {
-		this.SendRequestToObs(A_ThisFunc, {transitionName: transitionName})
+	SetCurrentSceneTransition(transitionName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {transitionName: transitionName})
 	}
-	SetCurrentSceneTransitionDuration(transitionDuration) {
-		this.SendRequestToObs(A_ThisFunc, {transitionDuration: transitionDuration})
+	SetCurrentSceneTransitionDuration(transitionDuration, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {transitionDuration: transitionDuration})
 	}
-	SetCurrentSceneTransitionSettings(transitionSettings, overlay:="true") {
-		this.SendRequestToObs(A_ThisFunc, {transitionSettings: transitionSettings, overlay: overlay})
+	SetCurrentSceneTransitionSettings(transitionSettings, overlay:="true", requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {transitionSettings: transitionSettings, overlay: overlay})
 	}
-	GetCurrentSceneTransitionCursor() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetCurrentSceneTransitionCursor(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	TriggerStudioModeTransition() {
-		this.SendRequestToObs(A_ThisFunc)
+	TriggerStudioModeTransition(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SetTBarPosition(position, release:="true") {
-		this.SendRequestToObs(A_ThisFunc, {position: position, release: release})
+	SetTBarPosition(position, release:="true", requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {position: position, release: release})
 	}
-	GetSourceFilterList(sourceName) {
-		this.SendRequestToObs(A_ThisFunc, {sourceName: sourceName})
+	GetSourceFilterList(sourceName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sourceName: sourceName})
 	}
-	GetSourceFilterDefaultSettings(filterKind) {
-		this.SendRequestToObs(A_ThisFunc, {filterKind: filterKind})
+	GetSourceFilterDefaultSettings(filterKind, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {filterKind: filterKind})
 	}
-	CreateSourceFilter(sourceName, filterName, filterKind, filterSettings:=0) {
+	CreateSourceFilter(sourceName, filterName, filterKind, filterSettings:=0, requestId := 0) {
 		data := {sourceName: sourceName, filterName: filterName, filterKind: filterKind}
 		if (filterSettings) {
 			data.filterSettings := filterSettings
 		}
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	RemoveSourceFilter(sourceName, filterName) {
-		this.SendRequestToObs(A_ThisFunc, {sourceName: sourceName, filterName: filterName})
+	RemoveSourceFilter(sourceName, filterName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sourceName: sourceName, filterName: filterName})
 	}
-	SetSourceFilterName(sourceName, filterName, newFilterName) {
-		this.SendRequestToObs(A_ThisFunc, {sourceName: sourceName, filterName: filterName, newFilterName: newFilterName})
+	SetSourceFilterName(sourceName, filterName, newFilterName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sourceName: sourceName, filterName: filterName, newFilterName: newFilterName})
 	}
-	GetSourceFilter(sourceName, filterName) {
-		this.SendRequestToObs(A_ThisFunc, {sourceName: sourceName, filterName: filterName})
+	GetSourceFilter(sourceName, filterName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sourceName: sourceName, filterName: filterName})
 	}
-	SetSourceFilterIndex(sourceName, filterName, filterIndex) {
-		this.SendRequestToObs(A_ThisFunc, {sourceName: sourceName, filterName: filterName, filterIndex: filterIndex})
+	SetSourceFilterIndex(sourceName, filterName, filterIndex, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sourceName: sourceName, filterName: filterName, filterIndex: filterIndex})
 	}
-	SetSourceFilterSettings(sourceName, filterName, filterSettings, overlay:="true") {
-		this.SendRequestToObs(A_ThisFunc, {sourceName: sourceName, filterName: filterName, filterSettings: filterSettings, overlay: overlay})
+	SetSourceFilterSettings(sourceName, filterName, filterSettings, overlay:="true", requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sourceName: sourceName, filterName: filterName, filterSettings: filterSettings, overlay: overlay})
 	}
-	SetSourceFilterEnabled(sourceName, filterName, filterEnabled) {
-		this.SendRequestToObs(A_ThisFunc, {sourceName: sourceName, filterName: filterName, filterEnabled: filterEnabled})
+	SetSourceFilterEnabled(sourceName, filterName, filterEnabled, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sourceName: sourceName, filterName: filterName, filterEnabled: filterEnabled})
 	}
-	GetSceneItemList(sceneName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName})
+	GetSceneItemList(sceneName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName})
 	}
-	GetGroupSceneItemList(sceneName) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName})
+	GetGroupSceneItemList(sceneName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName})
 	}
-	GetSceneItemId(sceneName, sourceName, searchOffset := 0) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sourceName: sourceName, searchOffset: searchOffset})
+	GetSceneItemId(sceneName, sourceName, searchOffset := 0, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sourceName: sourceName, searchOffset: searchOffset})
 	}
-	CreateSceneItem(sceneName, sourceName, sceneItemEnabled := "true") {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sourceName: sourceName, sceneItemEnabled: sceneItemEnabled})
+	CreateSceneItem(sceneName, sourceName, sceneItemEnabled := "true", requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sourceName: sourceName, sceneItemEnabled: sceneItemEnabled})
 	}
-	RemoveSceneItem(sceneName, sceneItemId) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId})
+	RemoveSceneItem(sceneName, sceneItemId, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId})
 	}
-	DuplicateSceneItem(sceneName, sceneItemId, destinationSceneName := 0) {
+	DuplicateSceneItem(sceneName, sceneItemId, destinationSceneName := 0, requestId := 0) {
 		data := {sceneName: sceneName, sceneItemId: sceneItemId}
 		if (destinationSceneName) {
 			data.destinationSceneName := destinationSceneName
 		}
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	GetSceneItemTransform(sceneName, sceneItemId) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId})
+	GetSceneItemTransform(sceneName, sceneItemId, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId})
 	}
-	SetSceneItemTransform(sceneName, sceneItemId, sceneItemTransform) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemTransform: sceneItemTransform})
+	SetSceneItemTransform(sceneName, sceneItemId, sceneItemTransform, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemTransform: sceneItemTransform})
 	}
-	GetSceneItemEnabled(sceneName, sceneItemId) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId})
+	GetSceneItemEnabled(sceneName, sceneItemId, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId})
 	}
-	SetSceneItemEnabled(sceneName, sceneItemId, sceneItemEnabled) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemEnabled: sceneItemEnabled})
+	SetSceneItemEnabled(sceneName, sceneItemId, sceneItemEnabled, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemEnabled: sceneItemEnabled})
 	}
-	GetSceneItemLocked(sceneName, sceneItemId) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId})
+	GetSceneItemLocked(sceneName, sceneItemId, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId})
 	}
-	SetSceneItemLocked(sceneName, sceneItemId, sceneItemLocked) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemLocked: sceneItemLocked})
+	SetSceneItemLocked(sceneName, sceneItemId, sceneItemLocked, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemLocked: sceneItemLocked})
 	}
-	GetSceneItemIndex(sceneName, sceneItemId) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId})
+	GetSceneItemIndex(sceneName, sceneItemId, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId})
 	}
-	SetSceneItemIndex(sceneName, sceneItemId, sceneItemIndex) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemIndex: sceneItemIndex})
+	SetSceneItemIndex(sceneName, sceneItemId, sceneItemIndex, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemIndex: sceneItemIndex})
 	}
-	GetSceneItemBlendMode(sceneName, sceneItemId) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId})
+	GetSceneItemBlendMode(sceneName, sceneItemId, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId})
 	}
-	SetSceneItemBlendMode(sceneName, sceneItemId, sceneItemBlendMode) {
-		this.SendRequestToObs(A_ThisFunc, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemBlendMode: sceneItemBlendMode})
+	SetSceneItemBlendMode(sceneName, sceneItemId, sceneItemBlendMode, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {sceneName: sceneName, sceneItemId: sceneItemId, sceneItemBlendMode: sceneItemBlendMode})
 	}
-	GetVirtualCamStatus() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetVirtualCamStatus(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	ToggleVirtualCam() {
-		this.SendRequestToObs(A_ThisFunc)
+	ToggleVirtualCam(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	StartVirtualCam() {
-		this.SendRequestToObs(A_ThisFunc)
+	StartVirtualCam(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	StopVirtualCam() {
-		this.SendRequestToObs(A_ThisFunc)
+	StopVirtualCam(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	GetReplayBufferStatus() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetReplayBufferStatus(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	ToggleReplayBuffer() {
-		this.SendRequestToObs(A_ThisFunc)
+	ToggleReplayBuffer(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	StartReplayBuffer() {
-		this.SendRequestToObs(A_ThisFunc)
+	StartReplayBuffer(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	StopReplayBuffer() {
-		this.SendRequestToObs(A_ThisFunc)
+	StopReplayBuffer(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SaveReplayBuffer() {
-		this.SendRequestToObs(A_ThisFunc)
+	SaveReplayBuffer(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	GetLastReplayBufferReplay() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetLastReplayBufferReplay(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	GetOutputList() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetOutputList(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	GetOutputStatus(outputName) {
-		this.SendRequestToObs(A_ThisFunc, {outputName: outputName})
+	GetOutputStatus(outputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {outputName: outputName})
 	}
-	ToggleOutput(outputName) {
-		this.SendRequestToObs(A_ThisFunc, {outputName: outputName})
+	ToggleOutput(outputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {outputName: outputName})
 	}
-	StartOutput(outputName) {
-		this.SendRequestToObs(A_ThisFunc, {outputName: outputName})
+	StartOutput(outputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {outputName: outputName})
 	}
-	StopOutput(outputName) {
-		this.SendRequestToObs(A_ThisFunc, {outputName: outputName})
+	StopOutput(outputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {outputName: outputName})
 	}
-	GetOutputSettings(outputName) {
-		this.SendRequestToObs(A_ThisFunc, {outputName: outputName})
+	GetOutputSettings(outputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {outputName: outputName})
 	}
-	SetOutputSettings(outputName, outputSettings) {
-		this.SendRequestToObs(A_ThisFunc, {outputName: outputName, outputSettings: outputSettings})
+	SetOutputSettings(outputName, outputSettings, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {outputName: outputName, outputSettings: outputSettings})
 	}
-	GetStreamStatus() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetStreamStatus(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	ToggleStream() {
-		this.SendRequestToObs(A_ThisFunc)
+	ToggleStream(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	StartStream() {
-		this.SendRequestToObs(A_ThisFunc)
+	StartStream(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	StopStream() {
-		this.SendRequestToObs(A_ThisFunc)
+	StopStream(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SendStreamCaption(captionText) {
-		this.SendRequestToObs(A_ThisFunc, {captionText: captionText})
+	SendStreamCaption(captionText, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {captionText: captionText})
 	}
-	GetRecordStatus() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetRecordStatus(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	ToggleRecord() {
-		this.SendRequestToObs(A_ThisFunc)
+	ToggleRecord(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	StartRecord() {
-		this.SendRequestToObs(A_ThisFunc)
+	StartRecord(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	StopRecord() {
-		this.SendRequestToObs(A_ThisFunc)
+	StopRecord(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	ToggleRecordPause() {
-		this.SendRequestToObs(A_ThisFunc)
+	ToggleRecordPause(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	PauseRecord() {
-		this.SendRequestToObs(A_ThisFunc)
+	PauseRecord(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	ResumeRecord() {
-		this.SendRequestToObs(A_ThisFunc)
+	ResumeRecord(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	GetMediaInputStatus(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	GetMediaInputStatus(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetMediaInputCursor(inputName, mediaCursor) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, mediaCursor: mediaCursor})
+	SetMediaInputCursor(inputName, mediaCursor, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, mediaCursor: mediaCursor})
 	}
-	OffsetMediaInputCursor(inputName, mediaCursorOffset) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, mediaCursorOffset: mediaCursorOffset})
+	OffsetMediaInputCursor(inputName, mediaCursorOffset, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, mediaCursorOffset: mediaCursorOffset})
 	}
-	TriggerMediaInputAction(inputName, mediaAction) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName, mediaAction: mediaAction})
+	TriggerMediaInputAction(inputName, mediaAction, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, mediaAction: mediaAction})
 	}
-	GetStudioModeEnabled() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetStudioModeEnabled(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	SetStudioModeEnabled(studioModeEnabled) {
-		this.SendRequestToObs(A_ThisFunc, {studioModeEnabled: studioModeEnabled})
+	SetStudioModeEnabled(studioModeEnabled, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {studioModeEnabled: studioModeEnabled})
 	}
-	OpenInputPropertiesDialog(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	OpenInputPropertiesDialog(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	OpenInputFiltersDialog(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	OpenInputFiltersDialog(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	OpenInputInteractDialog(inputName) {
-		this.SendRequestToObs(A_ThisFunc, {inputName: inputName})
+	OpenInputInteractDialog(inputName, requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	GetMonitorList() {
-		this.SendRequestToObs(A_ThisFunc)
+	GetMonitorList(requestId := 0) {
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
-	OpenVideoMixProjector(videoMixType, monitorIndex := -2, projectorGeometry := 0) {
+	OpenVideoMixProjector(videoMixType, monitorIndex := -2, projectorGeometry := 0, requestId := 0) {
 		data := {videoMixType: videoMixType}
 		if (monitorIndex > -2) {
 			data.monitorIndex := monitorIndex
@@ -685,9 +693,9 @@ class OBSWebSocket extends WebSocket
 		if (projectorGeometry) {
 			data.projectorGeometry := projectorGeometry
 		}
-		this.SendRequestToObs(A_ThisFunc, data)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	OpenSourceProjector(sourceName, monitorIndex := -2, projectorGeometry := 0) {
+	OpenSourceProjector(sourceName, monitorIndex := -2, projectorGeometry := 0, requestId := 0) {
 		data := {sourceName: sourceName}
 		if (monitorIndex > -2) {
 			data.monitorIndex := monitorIndex
@@ -695,6 +703,6 @@ class OBSWebSocket extends WebSocket
 		if (projectorGeometry) {
 			data.projectorGeometry := projectorGeometry
 		}
-		this.SendRequestToObs(A_ThisFunc)
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
 }

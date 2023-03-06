@@ -2,23 +2,11 @@
 
 Handling OBS Studio via WebSocket with AutoHotKey.
 
-Get to the point 🡺 check the first script under [Examples](#-examples)
-
 This AutoHotKey library handles OBS websocket version: 5.0.1
 
 Basic functionality tested with OBS Studio 28.0.3 (64 bit), 29.0.0
 
-You will need the following AHK libraries too:
-
-- [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk)
-- [Coco's JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON)
-- [ahkscript/libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk)
-
-⚠ This code is under development. I do not expect breaking changes in the near future, and it works as it is right now.
-
-All available OBS websocket functions are implemented, but not all tested.
-
-[OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md) should be the no.1 resource when it comes to actions, events, parameters and data structures.
+Get to the point 🡺 check the first script under [Examples](#-examples)
 
 ## 🤔 Why would you want to use this script?
 
@@ -30,15 +18,57 @@ Let be here some inspiration:
 
 - changing to a "Score screen" opens a local excel table where results can be displayed, changed and shown to the audience; pressing another hotkey would change back the scene and close the excel
 
+- muting the main microphone (by hotkey or in OBS) can set a LED strip to red and show a red GUI
+
+I am open for suggestions! Let me know what you think about this script or how can I improve it.
+Also, I would love to see what processes you have implemented with this script.
+
+Want to see a real life example?
+[Here is my personal script.](https://github.com/5ony/OBSWebSocketAHK/blob/main/barsony-handcrafted.ahk)
+Make sure you read its documentation. I'm sure it will not work at you because of the OBS scene setup, but it shows how can all the stuff below implemented into one script.
+(To be fair, I should make a more compact version of the script to be usable by anyone.)
+
+You will need the following AHK libraries too:
+
+- [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk)
+- [G33kDude's JSON.ahk 0.4.1](https://github.com/G33kDude/cJson.ahk/releases/download/0.4.1/JSON.ahk)
+- [ahkscript/libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk)
+
+⚠ This code is under development.
+
+All available OBS websocket functions are implemented, but not all tested.
+
+[OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md) should be the No.1 resource when it comes to actions, events, parameters and data structures.
+
+## 🔀 Change log
+
+### v1.1.0 ❗ breaking change
+
+- added requestId: every method, which request OBS now have an optional requestId as a last parameter. Getter functions do not always give back the information sent when calling. With requestId it is possible to pair the sent information to the received one (data.d.requestId). If you are using the SendRequestToObs() method directly, the parameter order changed, hence it is a breaking change.
+- added barsony-handcrafted.ahk: my personal streaming script. I do not stream too much, but I had fun writing the script. It is tailored to my specially organized scene items, so it surely will not work out of the box. There is a small documentation in the code at the header.
+- reorganized the order of message processing
+- fixed some non-working methods
+
+### v1.0.0
+
+- initial version
+
+### 🚧 To do (Might do)
+
+* Screenshots from the OBS setup, Wireshark and UTF-8 with BOM
+* Make a script to be usable in a general OBS scene setup
+* Internet Explorer (websocket) throws error when connection is interrupted
+* Automatic connection retry
+* Automatic recovery from errors
+* Test all functionalities
+
 ## 🙏 Gratitude
 
-Thanks for [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk), [Coco's JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON), all [ahkscript contributors](https://github.com/ahkscript) and of course OBS websocket and OBS Studio guys.
+Thanks for G33kDude for [Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk) and [JSON.ahk](https://github.com/G33kDude/cJson.ahk/releases/download/0.4.1/JSON.ahk), joedf and Masonjar13 for [libcrypt.ahk](https://github.com/ahkscript/libcrypt) and of course the AHK community, the OBS websocket and OBS Studio guys.
 
-If you want to support me with a coffee, I thank you for that, you can do it here:
+Please support these guys and if you want to support me with a coffee, I thank you for that, you can do it here:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/N4N6FX30H)
-
-I am open for suggestions! Let me know what you think about this script or how can I improve it. Also, I would love to see what processes you have implemented with this script.
 
 ## 💥 Quick setup
 
@@ -48,11 +78,11 @@ I am open for suggestions! Let me know what you think about this script or how c
 	- [JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON/blob/master/JSON.ahk)
 	- [libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk/blob/master/build/libcrypt.ahk)
 
-- Open OBS Studio, and navigate to Tools -> obs-websocket Settings, and leave the window open.
+- Open OBS Studio, and navigate to Tools -> Websocket Server Settings, and leave the window open.
 - Click on Show Connect Info button.
 - Remove the Server Password. You can use it with password too, but it might be easier to try it without password. Also, all of the examples are without password.
 - Copy the full IP address and port to your AHK script ("localhost:4455" will not be enough, but "127.0.0.1:4455" works fine).
-- You can close the "Websocket connect info" window, but keep the "obs-websocket Settings" window open.
+- You can close the "Websocket connect info" window, but keep the "Websocket Server Settings" window open.
 - Create a simple script where the lib directory resides.
 
 ```
@@ -76,6 +106,34 @@ obsc := new MyOBSController("ws://127.0.0.1:4455/")
 ; or, if you are using password:
 ; obsc := new MyOBSController("ws://127.0.0.1:4455/", "YourPasswordHere")
 ```
+
+## General tips
+
+When changing scenes it is easier to use SceneTransitionEnded event instead of CurrentProgramSceneChanged, because the latter one will trigger two changes: with the scene we are changing from and with the new one we are changing to (which you might or might not desire).
+SceneTransitionEnded will be triggered only once with the new scene.
+
+## 🔍 Debugging
+
+### ✉ Websocket messages (optional)
+
+Messages can be intercepted with [WireShark](https://www.wireshark.org).
+
+Set the adapter to "Adapter for loopback traffic capture", set display filter to websocket. Use the script and if there is any messages between OBS and your script, it will be listed.
+You can check the message content.
+If the message content is masked, you can unmask it.
+Note that you might need the connection phase too for this to unmask the raw data.
+
+### 💌 Message data
+
+Highly recommended to use [scite4ahk](https://www.autohotkey.com/scite4ahk/).
+You can easily set breakpoints and check the format of the received data.
+It is a great AHK tool in general.
+
+### 🙂 Emojis
+
+If you are using emojis (in scene names, input names, or just in general), make sure you save the files with "UTF-8 with BOM" option.
+This can be set even in Windows Notepad.
+You might just have been saved from "Scene not found" error messages.
 
 ## 🔄 Requests to OBS Studio
 
@@ -126,7 +184,8 @@ To subscibe to events, list them at the class initialization:
 
 Note the bitwise `|`, do not fall into the `||` or `&` or `&&` trap.
 
-Events, similarly to the requests, need a function where data can be received. The function name should be event name + "Event". For example muting an input with `SetInputMute()` will emit an `InputMuteStateChanged` event; to handle that there should be an `InputMuteStateChangedEvent` function (method under your class) to handle the data sent by OBS.
+Events, similarly to the requests, need a function where data can be received. The function name should be event name + "Event".
+For example muting an input with `SetInputMute()` will emit an `InputMuteStateChanged` event; to handle that there should be an `InputMuteStateChangedEvent` function (method under your class) to handle the data sent by OBS.
 
 ```
 class MyOBSController extends OBSWebSocket {
@@ -140,13 +199,15 @@ class MyOBSController extends OBSWebSocket {
 
 ## 🧐 Examples
 
-Note that most (not all) of the examples can be done by defining hotkeys in OBS Studio. These examples are here just to give you the basic synax of triggers, events and responses.
+Note that most (not all) of the examples can be done by defining hotkeys in OBS Studio.
+These examples are here just to give you the basic synax of triggers, events and responses.
 
 ### Toggling scenes and scene items (sources)
 
 [example-scene-and-scene-item-changer.ahk](example-scene-and-scene-item-changer.ahk)
 
-Basically this is the scipt you might want to extend. No explanation here, but if you need a deeper knowledge about the mechanism, you might want to check all other scripts below this one.
+Basically this is the scipt you might want to extend.
+No explanation here, but if you need a deeper knowledge about the mechanism, you might want to check all other scripts below this one.
 
 ```
 #NoEnv
@@ -224,7 +285,8 @@ While websocket address as "localhost" does not work, using localhost IP address
 
 [example-toggle-a-scene.ahk](example-toggle-a-scene.ahk)
 
-Simplest script to change scenes. If you do not want to receive any data, and do not care about any events, you do not need to create a new class.
+Simplest script to change scenes.
+If you do not want to receive any data, and do not care about any events, you do not need to create a new class.
 
 ```
 #Include lib/OBSWebSocket.ahk
@@ -286,7 +348,8 @@ return
 
 [example-toggle-a-scene-element.ahk](example-toggle-a-scene-element.ahk)
 
-Scene items ("Sources" in OBS Studio) can be manipulated with a valid ID, and not by their names. To read the ID, first we have to find it by name on a given scene.
+Scene items ("Sources" in OBS Studio) can be manipulated with a valid ID, and not by their names.
+To read the ID, first we have to find it by name on a given scene.
 
 In the example below we will change the visibility of the "Webcamera" scene item under "Gaming" scene. 
 
@@ -355,11 +418,13 @@ F12::
 
 In this case `SetInputMute()` will trigger OBS to mute/unmute, and OBS will send an `InputMuteStateChanged` event, which is handled by `EventInputMuteStateChanged()`.
 
-You might think that using a `SetInputMuteResponse()` function would be enough to handle whether the microphone is muted or not, but that is only a response message for the mute request made from the AHK script, which means `SetInputMuteResponse()` would be called ONLY when calling `SetInputMute()` first, so muting/unmuting the input in OBS would not trigger `SetInputMuteResponse()`. By utilizing the event itself, the script above will trigger the scene change, whenever the microphone is muted from AHK or in OBS.
+You might think that using a `SetInputMuteResponse()` function would be enough to handle whether the microphone is muted or not, but that is only a response message for the mute request made from the AHK script, which means `SetInputMuteResponse()` would be called ONLY when calling `SetInputMute()` first, so muting/unmuting the input in OBS would not trigger `SetInputMuteResponse()`.
+By utilizing the event itself, the script above will trigger the scene change, whenever the microphone is muted from AHK or in OBS.
 
 ### Toggling microphone or scene triggers scene change and microphone toggle (example-toggling-microphone-or-scene-triggers-scene-change-and-microphone-toggle.ahk)
 
-The difference between this and the previous one is that even if the scene is changed in OBS, now the microphone will be toggled as well, as well as muting/unmuting the microphone changes the active scene. So basically the microphone muted state and the scene visibility will be "linked".
+The difference between this and the previous one is that even if the scene is changed in OBS, now the microphone will be toggled as well, as well as muting/unmuting the microphone changes the active scene.
+So basically the microphone muted state and the scene visibility will be "linked".
 
 ```
 #Include lib/OBSWebSocket.ahk
@@ -395,10 +460,15 @@ F12::
 return
 ```
 
-The most important thing to notice here is that (after pressing F12) `SetInputMute()` triggers `EventInputMuteStateChanged()` which calls `SetCurrentProgramScene()` which triggers `EventCurrentProgramSceneChanged()` which calls `EventInputMuteStateChanged()` which... do you see the pattern here? It is an infinite loop.
-Also, if the scene is changed, the infinite loop starts with `EventCurrentProgramSceneChanged()`, but the effect is the same. The runtime of infinite loops is quite long; I have not measured it yet, but it is close to the end of our known universe, or even worse, blue death of Windows, so let's not do that.
+The most important thing to notice here is that (after pressing F12) `SetInputMute()` triggers `EventInputMuteStateChanged()` which calls `SetCurrentProgramScene()` which triggers `EventCurrentProgramSceneChanged()` which calls `EventInputMuteStateChanged()` which... do you see the pattern here?
+It is an infinite loop.
+Also, if the scene is changed, the infinite loop starts with `EventCurrentProgramSceneChanged()`, but the effect is the same.
+The runtime of infinite loops is quite long; I have not measured it yet, but it is close to the end of our known universe, or even worse, the script will freeze, so let's not do that.
 
-Here we skip the infinite loop by checking the muted state and the active scene. We could even get the active scene and the muted state of the microphone and check all of them at once, but I think it is a good practice not to trust the saved states of AHK variables, but to rely on the real states coming from OBS Studio. It is possible to write a more effective code than this, I just want to keep this here to for clarity (or for complexity?); I advice to run this code in your head, just go get familiar with requests and effect of events. The code below runs without infinite loop.
+Here we skip the infinite loop by checking the muted state and the active scene.
+We could even get the active scene and the muted state of the microphone and check all of them at once, but I think it is a good practice not to trust the saved states of AHK variables, but to rely on the real states coming from OBS Studio.
+It is possible to write a more effective code than this, I just want to keep this here to for clarity (or for complexity?); I advice to run this code in your head, just go get familiar with requests and effect of events.
+The code below runs without infinite loop.
 
 ### Toggling any scene items (sources) in one scene
 
@@ -451,28 +521,3 @@ F10::obsc.toggleSceneItem("Audio Input Capture")
 F11::obsc.toggleSceneItem("Image")
 F12::obsc.toggleSceneItem("Display Capture")
 ```
-
-## General tips
-
-When changing scenes it is easier to use SceneTransitionEnded event instead of CurrentProgramSceneChanged, because the latter one will trigger two changes: with the scene we are changing from and with the new one we are changing to.
-SceneTransitionEnded will be triggered only once with the new scene.
-
-## 🔍 Debugging
-
-### ✉ Websocket messages
-
-Messages can be intercepted with [WireShark](https://www.wireshark.org).
-
-Set the adapter to "Adapter for loopback traffic capture", set display filter to websocket. Use the script and if there is any messages between OBS and your script, it will be listed. You can check the message content. If the message content is masked, you can unmask it. Note that you might need the connection phase too for this to unmask the raw data.
-
-### 🙂 Emojis
-
-If you are using emojis (in scene names, input names, or just in general), make sure you save the files with "UTF-8 with BOM" option. This can be set even in Windows Notepad. You might just have been saved from "Scene not found" error messages.
-
-## 🚧 To do (Might do)
-
-* Screenshots from OBS settings, Wireshark and UTF-8 with BOM
-* Internet Explorer (websocket) throws error when connection is interrupted
-* Automatic connection retry
-* Automatic recovery from errors
-* Test all functionalities
