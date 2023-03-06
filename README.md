@@ -44,6 +44,7 @@ All available OBS websocket functions are implemented, but not all tested.
 
 ### v1.1.0 ❗ breaking change
 
+- changed JSON library
 - added requestId: every method, which request OBS now have an optional requestId as a last parameter. Getter functions do not always give back the information sent when calling. With requestId it is possible to pair the sent information to the received one (data.d.requestId). If you are using the SendRequestToObs() method directly, the parameter order changed, hence it is a breaking change.
 - added barsony-handcrafted.ahk: my personal streaming script. I do not stream too much, but I had fun writing the script. It is tailored to my specially organized scene items, so it surely will not work out of the box. There is a small documentation in the code at the header.
 - reorganized the order of message processing
