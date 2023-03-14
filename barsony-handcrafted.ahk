@@ -15,7 +15,7 @@
  *	- if the mic is muted when OBS and this script starts, the red GUI is shown
  *	- numpad keys activate some items (gif memes) in order.
  *	  The order is not random, but sequential to show variance.
- *  - all sceneitems and some named inputs state is tracked and synchrnoized,
+ *	- all sceneitems and some named inputs state is tracked and synchrnoized,
  *	  even though it is not necessarily needed. However, I have nested scenes, where I show
  *	  a scene item, then disabling it (the meme part). So in order to do that, I just read
  *	  every scene items from every scenes.
@@ -244,7 +244,6 @@ class MyOBSController extends ObsWebSocket {
 			wrh.SetTimeouts(500, 500, 100, 100)
 			whr.Open("GET", "http://192.168.1.116?led=" . ledControlParams)
 			whr.Send(requestBody)
-			whr
 		} Catch err
 		{
 			; noop, no success = no problem
