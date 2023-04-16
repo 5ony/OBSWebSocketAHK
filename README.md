@@ -56,6 +56,7 @@ All available OBS websocket functions are implemented, but not all tested.
 
 ### 🚧 To do (Might do)
 
+* Better group scene item handling (now there is an example code for that)
 * Screenshots from the OBS setup, Wireshark and UTF-8 with BOM
 * Make a script to be usable in a general OBS scene setup
 * Internet Explorer (websocket) throws error when connection is interrupted
@@ -471,7 +472,7 @@ We could even get the active scene and the muted state of the microphone and che
 It is possible to write a more effective code than this, I just want to keep this here to for clarity (or for complexity?); I advice to run this code in your head, just go get familiar with requests and effect of events.
 The code below runs without infinite loop.
 
-### Toggling any scene items (sources) in one scene
+### Toggling any scene items (sources) in one scene (handles groups)
 
 [example-toggle-all-scene-elements.ahk](example-toggle-all-scene-elements.ahk)
 
@@ -481,6 +482,9 @@ Imagine the following setup in OBS
 
 The scene name is Scene, and there are four different scene items (sources).
 You can enable/disable the selected scene items with this script below with F9-F12.
+
+Even if the scene items are under groups, this script can handle them. However, note that even the OBSProject is stating the following: "Using groups at all in OBS is discouraged, as they are very broken under the hood. Please use nested scenes instead."
+
 Note that there is no mechanism implemented here to handle changes coming from OBS.
 
 ```
@@ -495,22 +499,40 @@ class MyOBSController extends ObsWebSocket {
 	sceneItemsByName := {}
 
 	AfterIdentified() {
-		this.GetSceneItemList(this.sceneName)
+		; we should save the sceneName, so we pass it as a requestId
+		this.GetSceneItemList(this.sceneName, this.sceneName)
 	}
 
 	GetSceneItemListResponse(data) {
+		this.sceneItemListResponseArrived(data)
+	}
+
+	GetGroupSceneItemListResponse(data) {
+		this.sceneItemListResponseArrived(data)
+	}
+
+	sceneItemListResponseArrived(data) {
 		For Key, sceneItemData in data.d.responseData.sceneItems
 		{
-			this.sceneItemsByName[sceneItemData.sourceName] := {enabled: sceneItemData.sceneItemEnabled, id: sceneItemData.sceneItemId, name: sceneItemData.sourceName}
-		}
+			; let's save the sceneName as well, because activating scene items
+			; under groups will need the group name, which is the sceneName
+			this.sceneItemsByName[sceneItemData.sourceName] := sceneItemData
+			this.sceneItemsByName[sceneItemData.sourceName].sceneName := data.d.requestId
+
+			; if the scene is a group, it should be 
+			if (sceneItemData.isGroup = 1) {
+				; we should save the sceneName, so we pass it as a requestId
+				this.GetGroupSceneItemList(sceneItemData.sourceName, sceneItemData.sourceName)
+			}
+		}		
 	}
 
 	toggleSceneItem(sceneItem) {
 		if (!this.sceneItemsByName[sceneItem]) {
 			return
 		}
-		this.sceneItemsByName[sceneItem].enabled := !this.sceneItemsByName[sceneItem].enabled
-		this.SetSceneItemEnabled(this.sceneName, this.sceneItemsByName[sceneItem].id, this.Boolean(this.sceneItemsByName[sceneItem].enabled))
+		this.sceneItemsByName[sceneItem].sceneItemEnabled := !this.sceneItemsByName[sceneItem].sceneItemEnabled
+		this.SetSceneItemEnabled(this.sceneItemsByName[sceneItem].sceneName, this.sceneItemsByName[sceneItem].sceneItemId, this.Boolean(this.sceneItemsByName[sceneItem].sceneItemEnabled))
 	}
 
 }
