@@ -42,6 +42,11 @@ All available OBS websocket functions are implemented, but not all tested.
 
 ## 🔀 Change log
 
+### v1.1.1
+
+- added GetFullSceneItemList() method to request all scene items, including items under groups (by default OBS gets back only the top level scene items)
+- modified the example script to use GetFullSceneItemList() method
+
 ### v1.1.0 ❗ breaking change
 
 - changed JSON library
@@ -56,7 +61,7 @@ All available OBS websocket functions are implemented, but not all tested.
 
 ### 🚧 To do (Might do)
 
-* Better group scene item handling (now there is an example code for that)
+* Check (rewrite) scripts under AHK v2.0
 * Screenshots from the OBS setup, Wireshark and UTF-8 with BOM
 * Make a script to be usable in a general OBS scene setup
 * Internet Explorer (websocket) throws error when connection is interrupted
@@ -209,6 +214,7 @@ These examples are here just to give you the basic synax of triggers, events and
 [example-scene-and-scene-item-changer.ahk](example-scene-and-scene-item-changer.ahk)
 
 Basically this is the scipt you might want to extend.
+Note that this script __does not handle groups__, and you are encouraged not to use groups (OBSProject recommendation).
 No explanation here, but if you need a deeper knowledge about the mechanism, you might want to check all other scripts below this one.
 
 ```
@@ -423,7 +429,8 @@ In this case `SetInputMute()` will trigger OBS to mute/unmute, and OBS will send
 You might think that using a `SetInputMuteResponse()` function would be enough to handle whether the microphone is muted or not, but that is only a response message for the mute request made from the AHK script, which means `SetInputMuteResponse()` would be called ONLY when calling `SetInputMute()` first, so muting/unmuting the input in OBS would not trigger `SetInputMuteResponse()`.
 By utilizing the event itself, the script above will trigger the scene change, whenever the microphone is muted from AHK or in OBS.
 
-### Toggling microphone or scene triggers scene change and microphone toggle (example-toggling-microphone-or-scene-triggers-scene-change-and-microphone-toggle.ahk)
+### Toggling microphone or scene triggers scene change and microphone toggle
+[example-toggling-microphone-or-scene-triggers-scene-change-and-microphone-toggle.ahk](example-toggling-microphone-or-scene-triggers-scene-change-and-microphone-toggle.ahk)
 
 The difference between this and the previous one is that even if the scene is changed in OBS, now the microphone will be toggled as well, as well as muting/unmuting the microphone changes the active scene.
 So basically the microphone muted state and the scene visibility will be "linked".
@@ -499,32 +506,14 @@ class MyOBSController extends ObsWebSocket {
 	sceneItemsByName := {}
 
 	AfterIdentified() {
-		; we should save the sceneName, so we pass it as a requestId
-		this.GetSceneItemList(this.sceneName, this.sceneName)
+		this.GetFullSceneItemList(this.sceneName)
 	}
 
-	GetSceneItemListResponse(data) {
-		this.sceneItemListResponseArrived(data)
-	}
-
-	GetGroupSceneItemListResponse(data) {
-		this.sceneItemListResponseArrived(data)
-	}
-
-	sceneItemListResponseArrived(data) {
+	GetFullSceneItemListResponse(data) {
 		For Key, sceneItemData in data.d.responseData.sceneItems
 		{
-			; let's save the sceneName as well, because activating scene items
-			; under groups will need the group name, which is the sceneName
 			this.sceneItemsByName[sceneItemData.sourceName] := sceneItemData
-			this.sceneItemsByName[sceneItemData.sourceName].sceneName := data.d.requestId
-
-			; if the scene is a group, it should be 
-			if (sceneItemData.isGroup = 1) {
-				; we should save the sceneName, so we pass it as a requestId
-				this.GetGroupSceneItemList(sceneItemData.sourceName, sceneItemData.sourceName)
-			}
-		}		
+		}
 	}
 
 	toggleSceneItem(sceneItem) {

@@ -2,9 +2,9 @@
  * Lib: OBSWebSocket.ahk
  *     OBS Studio WebScocket library for AutoHotkey
  * Version:
- *     v1.0.0 [updated 2022-10-25 (YYYY-MM-DD)]
+ *     v1.1.1 [updated 2023-04-17 (YYYY-MM-DD)]
  * Requirements:
- *     Latest version of AutoHotkey (v1.1+ or v2.0-a+)
+ *     AutoHotkey v1.1+ (it might not work with purely v2.0, I still have to check)
  *     WebSocket.ahk - https://github.com/G33kDude/WebSocket.ahk
  *     JSON.ahk - https://github.com/cocobelgica/AutoHotkey-JSON
  *     libcrypt.ahk - https://github.com/ahkscript/libcrypt.ahk
@@ -120,8 +120,12 @@ class OBSWebSocket extends WebSocket
 				MsgBox, % "Error, RequestStatus " value.d.requestStatus.code " | " value.d.requestStatus.comment
 				return
 			}
-			; msgBox, % Event.data
-			this[value.d.requestType . "Response"](value)
+			; if the requestId starts with __, then it is an "internal" call
+			if (InStr(value.d.requestId,"__") = 1) {
+				this["__" . value.d.requestType . "Response"](value)	
+			} else {				
+				this[value.d.requestType . "Response"](value)
+			}
 		} else if (value.op = this.WebSocketOpCode.Event) {
 			this[value.d.eventType . "Event"](value)
 		} else if (value.op = this.WebSocketOpCode.Hello) {
@@ -178,8 +182,10 @@ class OBSWebSocket extends WebSocket
  		return booleanValue ? "true" : "false"
 	}
 
-	SendRequestToObs(requestTypeParam := "", requestId := 0, requestData := 0) {
-		requestType := this.__GetFunctionName(requestTypeParam)
+	SendRequestToObs(requestTypeParam := "", requestId := 0, requestData := 0, requestType := 0) {
+		if (requestType = 0) {
+			requestType := this.__GetFunctionName(requestTypeParam)
+		}
 		if (!requestId) {
 			requestId := this.GetRequestId()
 		}
@@ -704,5 +710,49 @@ class OBSWebSocket extends WebSocket
 			data.projectorGeometry := projectorGeometry
 		}
 		this.SendRequestToObs(A_ThisFunc, requestId)
+	}
+
+	; Implementations which are not in OBSProject
+
+	; get all the scene items and group items under one scene (groups have to be requested separately)
+	__GetFullSceneItemListResponseData := 0 ; full response data this script will emit
+	__GetFullSceneItemListWaitingForResponse := {} ; housekeeping about sent and received messages
+	GetFullSceneItemList(sceneName, requestId := 0) {
+		this.__GetFullSceneItemListWaitingForResponse[sceneName] := 1
+		this.GetSceneItemList(sceneName, "__" . sceneName . "#" . requestId)
+	}
+	__GetSceneItemListResponse(data) {
+		this.__handleGetFullSceneItemListResponses(data)
+	}
+
+	__GetGroupSceneItemListResponse(data) {
+		this.__handleGetFullSceneItemListResponses(data)
+	}
+
+	__handleGetFullSceneItemListResponses(data) {
+		; 3 is the position after __ and length of __ and # (faster than to use regexp)
+		sceneName := SubStr(data.d.requestId, 3, InStr(data.d.requestId, "#") - 3)
+		requestId := SubStr(data.d.requestId, InStr(data.d.requestId, "#") + 1)
+		this.__GetFullSceneItemListWaitingForResponse.Delete(sceneName)
+
+		For Key, sceneItemData in data.d.responseData.sceneItems {
+			sceneItemData.sceneName := sceneName
+			if (sceneItemData.isGroup = 1) {
+				this.__GetFullSceneItemListWaitingForResponse[sceneItemData.sourceName] := 1
+				this.GetGroupSceneItemList(sceneItemData.sourceName, "__" . sceneItemData.sourceName . "#" . requestId)
+			}
+		}
+
+		if (!this.__GetFullSceneItemListResponseData) {
+			this.__GetFullSceneItemListResponseData := data
+		} else {
+			For Key, sceneItemData in data.d.responseData.sceneItems
+			{
+				this.__GetFullSceneItemListResponseData.d.responseData.sceneItems.push(sceneItemData)
+			}
+		}
+		if (this.__GetFullSceneItemListWaitingForResponse.Count() = 0) {
+			this["GetFullSceneItemListResponse"](this.__GetFullSceneItemListResponseData)
+		}
 	}
 }

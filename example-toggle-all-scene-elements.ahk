@@ -9,32 +9,14 @@ class MyOBSController extends ObsWebSocket {
 	sceneItemsByName := {}
 
 	AfterIdentified() {
-		; we should save the sceneName, so we pass it as a requestId
-		this.GetSceneItemList(this.sceneName, this.sceneName)
+		this.GetFullSceneItemList(this.sceneName)
 	}
 
-	GetSceneItemListResponse(data) {
-		this.sceneItemListResponseArrived(data)
-	}
-
-	GetGroupSceneItemListResponse(data) {
-		this.sceneItemListResponseArrived(data)
-	}
-
-	sceneItemListResponseArrived(data) {
+	GetFullSceneItemListResponse(data) {
 		For Key, sceneItemData in data.d.responseData.sceneItems
 		{
-			; let's save the sceneName as well, because activating scene items
-			; under groups will need the group name, which is the sceneName
 			this.sceneItemsByName[sceneItemData.sourceName] := sceneItemData
-			this.sceneItemsByName[sceneItemData.sourceName].sceneName := data.d.requestId
-
-			; if the scene is a group, it should be 
-			if (sceneItemData.isGroup = 1) {
-				; we should save the sceneName, so we pass it as a requestId
-				this.GetGroupSceneItemList(sceneItemData.sourceName, sceneItemData.sourceName)
-			}
-		}		
+		}
 	}
 
 	toggleSceneItem(sceneItem) {
