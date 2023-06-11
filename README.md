@@ -430,6 +430,7 @@ You might think that using a `SetInputMuteResponse()` function would be enough t
 By utilizing the event itself, the script above will trigger the scene change, whenever the microphone is muted from AHK or in OBS.
 
 ### Toggling microphone or scene triggers scene change and microphone toggle
+
 [example-toggling-microphone-or-scene-triggers-scene-change-and-microphone-toggle.ahk](example-toggling-microphone-or-scene-triggers-scene-change-and-microphone-toggle.ahk)
 
 The difference between this and the previous one is that even if the scene is changed in OBS, now the microphone will be toggled as well, as well as muting/unmuting the microphone changes the active scene.
@@ -532,4 +533,37 @@ F9::obsc.toggleSceneItem("Video Capture Device")
 F10::obsc.toggleSceneItem("Audio Input Capture")
 F11::obsc.toggleSceneItem("Image")
 F12::obsc.toggleSceneItem("Display Capture")
+```
+
+### Change Virtual Camera settings
+
+It seems that OBSWebSocket (which is built in OBS) does not support this yet.
+
+However, there are some [workarounds](https://github.com/5ony/OBSWebSocketAHK/issues/4), the best one is as follows.
+
+Every Scene collection has its own Virtual Camera settings.
+After you make a new Scene collection, adjust the Virtual Camera settings to your likings.
+
+To change to a new Scene collection, you have to stop the virtual camera settings first, activate the new scene collection, wait a bit so the new scene is loaded, then start the virtual camera like so:
+
+```
+#NoEnv
+SetBatchLines, -1
+#Include lib/ObsWebSocket.ahk
+class MyOBSController extends ObsWebSocket {}
+obsc := new MyOBSController("ws://127.0.0.1:4455/")
+
+F1::
+	obsc.StopVirtualCam()
+	obsc.SetCurrentSceneCollection("Gaming scene collection")
+	Sleep, 1000
+	obsc.StartVirtualCam()
+return
+
+F2::
+	obsc.StopVirtualCam()
+	obsc.SetCurrentSceneCollection("Facecam scene collection")
+	Sleep, 1000
+	obsc.StartVirtualCam()
+return
 ```

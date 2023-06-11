@@ -37,6 +37,14 @@ SetBatchLines, -1
 
 #Include lib/ObsWebSocket.ahk
 
+
+sceneNames := { gamingSceneName: "🎮📷 Gaming with cam [PgDn]"
+	, memeSceneName : "Effect - Gaming - meme"
+	, empty: "Empty"
+	, starting: "▶ Stream start - [F11]"
+	, ending: "⏹ Stream end"
+	, breaking: "⏸ Gaming szünet [End]" }
+
 class MyOBSController extends ObsWebSocket {
 
 	currentProgramSceneName := ""
@@ -45,6 +53,7 @@ class MyOBSController extends ObsWebSocket {
 	_initedScenes := {}
 	isInited := false
 	microphoneName := "🎤Mikrofon"
+	state := ""
 
 	AfterIdentified() {
 		this._initedScenes := {}
@@ -144,7 +153,6 @@ class MyOBSController extends ObsWebSocket {
 	}
 	InputNameChangedEvent(data) {
 		; TODO
-		; i:= 1
 	}
 
 	; ---- Enabling/disabling/muting events here
@@ -215,7 +223,7 @@ class MyOBSController extends ObsWebSocket {
 		this.SetCurrentProgramScene(sceneName)
 	}
 
-	; shows a mute sign with red background in top center of the screen
+	; shows a mute sign with red background in top right of the secondary screen
 	showMutedGUI(isMuted) {
 		if (isMuted) {
 			Gui -Border -Caption +Disabled +AlwaysOnTop
@@ -226,19 +234,20 @@ class MyOBSController extends ObsWebSocket {
 			Gui Font, s64 cFFFFFF, Segoe UI Emoji
 			Gui Add, Text, , 🔇
 			Gui +LastFound +0x80000 ; Set WS_EX_LAYERED style
-			Gui Show, xCenter y50 NoActivate, ShowMutedState
+			Gui Show, x-120 y50 NoActivate, ShowMutedState
 			WinSet, TransColor, 180
-			this.sendColorToLedStripe("C0074FF0000")
+			this.sendColorToLedStrip("C0074FF0000")
 		} else {
 			WinClose, ShowMutedState
-			this.sendColorToLedStripe("C007400FF00")
+			this.sendColorToLedStrip("C007400FF00")
 			Sleep, 100
-			this.sendColorToLedStripe("R")
+			this.sendColorToLedStrip("R")
 		}
 	}
 
 	; updates LED strip color
-	sendColorToLedStripe(ledControlParams) {
+	sendColorToLedStrip(ledControlParams) {
+		return
 		Try {
 			whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
 			wrh.SetTimeouts(500, 500, 100, 100)
@@ -249,16 +258,33 @@ class MyOBSController extends ObsWebSocket {
 			; noop, no success = no problem
 		}
 	}
+
+	streamingStart() {
+		this.SetCurrentProgramScene("Empty")
+		Sleep, 1000
+		this.StartStream()
+		Sleep, 2000
+		this.SetCurrentProgramScene("▶ Stream start - [F11]")
+		Sleep, 96000 ; 1:35
+		this.SetCurrentProgramScene("🎮📷 Gaming with cam [PgDn]")
+	}
+
+	streamingEnd() {
+		this.SetCurrentProgramScene("⏹ Stream end")
+		Sleep, 30000 ; 0:30
+		this.StopStream()
+	}
 }
 
 showGifMeme(sceneItemPreName, sceneItemCount) {
 	global seq
 	global obsc
-	global memeSceneName
+	global sceneNames
 	seq := seq + 1
 	sceneItemName := sceneItemPreName . (Mod(seq, sceneItemCount) + 1) . ".gif"
-	obsc.showSceneDelayed(memeSceneName, sceneItemName, 4000)
+	obsc.showSceneDelayed(sceneNames.memeSceneName, sceneItemName, 4000)
 }
+
 
 events := MyOBSController.EventSubscription.Config | MyOBSController.EventSubscription.Scenes | MyOBSController.EventSubscription.SceneItems | MyOBSController.EventSubscription.InputActiveStateChanged | MyOBSController.EventSubscription.InputShowStateChanged | MyOBSController.EventSubscription.Inputs
 obsc := new MyOBSController("ws://127.0.0.1:4455/","", events)
@@ -266,12 +292,9 @@ obsc := new MyOBSController("ws://127.0.0.1:4455/","", events)
 ; a sequential counter for not showing the same meme in a row in a meme group
 seq := 0
 
-gamingSceneName := "🎮📷 Gaming with cam [PgDn]"
-memeSceneName := "Effect - Gaming - meme"
-
-
-
 ; changing scenes
+#Insert::obsc.streamingStart()
+#Delete::obsc.streamingEnd()
 
 ; muting audio inputs
 +NumpadAdd::obsc.SetInputMute("🎤Mikrofon", obsc.Boolean(false))
@@ -287,11 +310,11 @@ NumpadDiv::obsc.SetInputMute("Audio - Game", obsc.Boolean(true))
 Numpad1::
 	seq := seq + 1
 	if (Mod(seq, 3) = 0)
-		obsc.showSceneDelayed(memeSceneName, "meme - yeahboi", 2000)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - yeahboi", 2000)
 	if (Mod(seq, 3) = 1)
-		obsc.showSceneDelayed(memeSceneName, "meme - nice", 2500)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - nice", 2500)
 	if (Mod(seq, 3) = 2)
-		obsc.showSceneDelayed(memeSceneName, "meme - kaboom-kaboom", 3000)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - kaboom-kaboom", 3000)
 	return
 
 ; 👊 execute / hit
@@ -304,9 +327,9 @@ Numpad3::showGifMeme("confused_", 19)
 Numpad4::
 	seq := seq + 1
 	if (!Mod(seq, 8)) {
-		obsc.showSceneDelayed(memeSceneName, "meme - hit markers", 3500)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - hit markers", 3500)
 	} else {
-		obsc.showSceneDelayed(memeSceneName, "panic_" . (Mod(seq, 3)) . ".gif", 4000)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "panic_" . (Mod(seq, 3)) . ".gif", 4000)
 	}
 	return
 
@@ -317,15 +340,15 @@ Numpad5::showGifMeme("running_away_", 4)
 Numpad6::
 	seq := seq + 1
 	if (Mod(seq, 4) = 0)
-		obsc.showSceneDelayed(memeSceneName, "meme - to be continued", 10000)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - to be continued", 10000)
 	if (Mod(seq, 4) = 1)
-		obsc.showSceneDelayed(memeSceneName, "meme - emotional damage", 4000)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - emotional damage", 4000)
 	if (Mod(seq, 4) = 2)
-		obsc.showSceneDelayed(memeSceneName, "meme - coffin dance", 11000)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - coffin dance", 11000)
 	if (Mod(seq, 4) = 3) {
 		obsc.SetCurrentProgramScene("Effect - Gaming - we'll be right back")
 		Sleep, 4000
-		obsc.SetCurrentProgramScene(gamingSceneName)
+		obsc.SetCurrentProgramScene(sceneNames.gamingSceneName)
 	}
 	return
 
