@@ -12,9 +12,11 @@ Get to the point 🡺 check the first script under [Examples](#-examples)
 
 Let be here some inspiration:
 
-- Be right back! - Pressing one key (defined in AHK) to toggle the microphone, and a "Be right back" scene item (working example in this repo)
+- [Be right back!](#toggling-microphone-or-scene-triggers-scene-change-and-microphone-toggle) Pressing one key (defined in AHK) to toggle the microphone, and a "Be right back" scene item
 
-- activate a scene/item/filter when health is low in a game (by watching health bar pixels) or an effect is on
+- [Change text](#change-text) with hotkeys, for example for changing scores
+
+- [activate a scene/item/filter](#toggle-filter-settings) when health is low in a game (by watching health bar pixels) or an effect is on
 
 - changing to a "Score screen" opens a local excel table where results can be displayed, changed and shown to the audience; pressing another hotkey would change back the scene and close the excel
 
@@ -316,6 +318,7 @@ return
 [example-filter-settings.ahk](example-filter-settings.ahk)
 
 You need to add a source "Desktop" and apply a Color Correction and a Sharpen filter to it, otherwise there will be errors.
+(Note that even though the examples mentioned "watching a pixel for checking health bar", this is not implemented here, as it is not a concern of OBS WebSocket functionality.)
 
 ```
 #Include lib/OBSWebSocket.ahk
@@ -533,6 +536,49 @@ F9::obsc.toggleSceneItem("Video Capture Device")
 F10::obsc.toggleSceneItem("Audio Input Capture")
 F11::obsc.toggleSceneItem("Image")
 F12::obsc.toggleSceneItem("Display Capture")
+```
+
+### Change text
+
+[example-change-text.ahk](example-change-text.ahk)
+
+You have to have a "TextItem" on your active scene for this to work.
+Of course it can be renamed to anything you like, but adjust the code for the change.
+
+```
+#NoEnv
+SetBatchLines, -1
+
+#Include lib/ObsWebSocket.ahk
+
+class MyOBSController extends ObsWebSocket {
+	score := 0
+
+	AfterIdentified() {
+		this.SetScore(this.score)
+	}
+
+	SetScore(scoreResult) {
+		; because 0 is not a visible string in AHK, we change it to text
+		if (!scoreResult) {
+			scoreResult := "0"
+		}
+		this.SetInputSettings("TextItem", {text: "Score: " . scoreResult})
+	}
+
+}
+
+obsc := new MyOBSController("ws://127.0.0.1:4455/")
+
+NumpadAdd::
+	obsc.score := obsc.score + 1
+	obsc.SetScore(obsc.score)
+return
+
+NumpadSub::
+	obsc.score := obsc.score - 1
+	obsc.SetScore(obsc.score)
+return
 ```
 
 ### Change Virtual Camera settings
