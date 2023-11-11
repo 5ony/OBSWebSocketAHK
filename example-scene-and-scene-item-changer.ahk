@@ -46,12 +46,14 @@ return
 ; set active scene to SceneB and set ItemB to visible
 Numpad2::
 	obsc.changeScene("SceneB")
+	Sleep, 100 ; wait for scene change
 	obsc.toggleSceneItem("SceneB", "ItemB", true)
 return
 
 ; set active scene to SceneB and set ItemB to hidden
 Numpad3::
 	obsc.changeScene("SceneB")
+	Sleep, 100 ; wait for scene change
 	obsc.toggleSceneItem("SceneB", "ItemB", false)
 return
 

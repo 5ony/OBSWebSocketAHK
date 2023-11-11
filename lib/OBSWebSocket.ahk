@@ -2,9 +2,9 @@
  * Lib: OBSWebSocket.ahk
  *     OBS Studio WebScocket library for AutoHotkey
  * Version:
- *     v1.1.1 [updated 2023-04-17 (YYYY-MM-DD)]
+ *     v1.1.1 [updated 2023-11-10 (YYYY-MM-DD)]
  * Requirements:
- *     AutoHotkey v1.1+ (it might not work with purely v2.0, I still have to check)
+ *     AutoHotkey v1.1+
  *     WebSocket.ahk - https://github.com/G33kDude/WebSocket.ahk
  *     JSON.ahk - https://github.com/cocobelgica/AutoHotkey-JSON
  *     libcrypt.ahk - https://github.com/ahkscript/libcrypt.ahk
@@ -426,6 +426,7 @@ class OBSWebSocket extends WebSocket
 		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
 	SetInputVolume(inputName, inputVolumeMul:=-1, inputVolumeDb:=0, requestId := 0) {
+		data := {inputName: inputName}
 		if (inputVolumeMul > -1) {
 			data.inputVolumeMul := inputVolumeMul
 		}
@@ -465,7 +466,7 @@ class OBSWebSocket extends WebSocket
 		this.SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName, propertyName: propertyName})
 	}
 	GetTransitionKindList(requestId := 0) {
-		this.SendRequestToObs(A_ThisFunc, requestId, {transitionKinds: transitionKinds})
+		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
 	GetSceneTransitionList(requestId := 0) {
 		this.SendRequestToObs(A_ThisFunc, requestId)
