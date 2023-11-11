@@ -2,180 +2,274 @@
  * Lib: OBSWebSocket.ahk
  *     OBS Studio WebScocket library for AutoHotkey
  * Version:
- *     v1.1.1 [updated 2023-11-10 (YYYY-MM-DD)]
+ *     v2.0.0 [updated 2023-11-11 (YYYY-MM-DD)]
  * Requirements:
- *     AutoHotkey v1.1+
- *     WebSocket.ahk - https://github.com/G33kDude/WebSocket.ahk
- *     JSON.ahk - https://github.com/cocobelgica/AutoHotkey-JSON
- *     libcrypt.ahk - https://github.com/ahkscript/libcrypt.ahk
+ *     AutoHotkey v2.0+
+ *     JSON.ahk - https://github.com/thqby/ahk2_lib/blob/master/JSON.ahk
+ *     Class_CNG.ahk - https://github.com/jNizM/AHK_CNG
  * OBS WebSocket specifications:
  *     https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md
- *
  * Installation:
- *     Use #Include OBSWebSocket.ahk or copy into a function library folder and then
- *     use #Include <OBSWebSocket>
+ *     Copy this file with the required libraries to a "lib" subdirectory
+ *     Use #Include lib/OBSWebSocket.ahk
  * Links:
  *     GitHub:		- https://github.com/5ony/OBSWebSocketAHK
  */
 
-#Include ./lib/WebSocket.ahk
-#Include ./lib/JSON.ahk
-#Include ./lib/libcrypt.ahk
+#Requires AutoHotkey >=2.0-
+#Include JSON.ahk
+#Include Class_CNG.ahk
 
-class OBSWebSocket extends WebSocket
-{
-	static WebSocketOpCode := { Hello: 0
-		, Identify: 1
-		, Identified: 2
-		, Reidentify: 3
-		, Event: 5
-		, Request: 6
-		, RequestResponse: 7
-		, RequestBatch: 8
-		, RequestBatchResponse: 9 }
+class OBSWebSocket {
+	static WebSocketOpCode := {
+		Hello: 0,
+		Identify: 1,
+		Identified: 2,
+		Reidentify: 3,
+		Event: 5,
+		Request: 6,
+		RequestResponse: 7,
+		RequestBatch: 8,
+		RequestBatchResponse: 9
+	}
 
-	static WebSocketCloseCode := { DontClose: 0
-		, UnknownReason: 4000
-		, MessageDecodeError: 4002
-		, MissingDataField: 4003
-		, InvalidDataFieldType: 4004
-		, InvalidDataFieldValue: 4005
-		, UnknownOpCode: 4006
-		, NotIdentified: 4007
-		, AlreadyIdentified: 4008
-		, AuthenticationFailed: 4009
-		, UnsupportedRpcVersion: 4010
-		, SessionInvalidated: 4011
-		, UnsupportedFeature: 4012 }
+	static WebSocketCloseCode := {
+		DontClose: 0,
+		UnknownReason: 4000,
+		MessageDecodeError: 4002,
+		MissingDataField: 4003,
+		InvalidDataFieldType: 4004,
+		InvalidDataFieldValue: 4005,
+		UnknownOpCode: 4006,
+		NotIdentified: 4007,
+		AlreadyIdentified: 4008,
+		AuthenticationFailed: 4009,
+		UnsupportedRpcVersion: 4010,
+		SessionInvalidated: 4011,
+		UnsupportedFeature: 4012
+	}
 
-	static RequestStatus := { Unknown: 0
-		, NoError: 10
-		, Success: 100
-		, MissingRequestType: 203
-		, UnknownRequestType: 204
-		, GenericError: 205
-		, UnsupportedRequestBatchExecutionType: 206
-		, MissingRequestField: 300
-		, MissingRequestData: 301
-		, InvalidRequestField: 400
-		, InvalidRequestFieldType: 401
-		, RequestFieldOutOfRange: 402
-		, RequestFieldEmpty: 403
-		, TooManyRequestFields: 404
-		, OutputRunning: 500
-		, OutputNotRunning: 501
-		, OutputPaused: 502
-		, OutputNotPaused: 503
-		, OutputDisabled: 504
-		, StudioModeActive: 505
-		, StudioModeNotActive: 506
-		, ResourceNotFound: 600
-		, ResourceAlreadyExists: 601
-		, InvalidResourceType: 602
-		, NotEnoughResources: 603
-		, InvalidResourceState: 604
-		, InvalidInputKind: 605
-		, ResourceNotConfigurable: 606
-		, InvalidFilterKind: 607
-		, ResourceCreationFailed: 700
-		, ResourceActionFailed: 701
-		, RequestProcessingFailed: 702
-		, CannotAct: 0 }
+	static RequestStatus := { Unknown: 0,
+		NoError: 10,
+		Success: 100,
+		MissingRequestType: 203,
+		UnknownRequestType: 204,
+		GenericError: 205,
+		UnsupportedRequestBatchExecutionType: 206,
+		MissingRequestField: 300,
+		MissingRequestData: 301,
+		InvalidRequestField: 400,
+		InvalidRequestFieldType: 401,
+		RequestFieldOutOfRange: 402,
+		RequestFieldEmpty: 403,
+		TooManyRequestFields: 404,
+		OutputRunning: 500,
+		OutputNotRunning: 501,
+		OutputPaused: 502,
+		OutputNotPaused: 503,
+		OutputDisabled: 504,
+		StudioModeActive: 505,
+		StudioModeNotActive: 506,
+		ResourceNotFound: 600,
+		ResourceAlreadyExists: 601,
+		InvalidResourceType: 602,
+		NotEnoughResources: 603,
+		InvalidResourceState: 604,
+		InvalidInputKind: 605,
+		ResourceNotConfigurable: 606,
+		InvalidFilterKind: 607,
+		ResourceCreationFailed: 700,
+		ResourceActionFailed: 701,
+		RequestProcessingFailed: 702,
+		CannotAct: 0
+	}
 
-	static EventSubscription := { General: 1 << 0
-		, Config: 1 << 1
-		, Scenes: 1 << 2
-		, Inputs: 1 << 3
-		, Transitions: 1 << 4
-		, Filters: 1 << 5
-		, Outputs: 1 << 6
-		, SceneItems: 1 << 7
-		, MediaInputs: 1 << 8
-		, Vendors: 1 << 9
-		, Ui: 1 << 10
-		, InputVolumeMeters: 1 << 16
-		, InputActiveStateChanged: 1 << 17
-		, InputShowStateChanged: 1 << 18
-		, SceneItemTransformChanged: 1 << 19
-		, All: 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 16 | 1 << 17 | 1 << 18 | 1 << 19 }
+	static EventSubscription := {
+		General: 1 << 0,
+		Config: 1 << 1,
+		Scenes: 1 << 2,
+		Inputs: 1 << 3,
+		Transitions: 1 << 4,
+		Filters: 1 << 5,
+		Outputs: 1 << 6,
+		SceneItems: 1 << 7,
+		MediaInputs: 1 << 8,
+		Vendors: 1 << 9,
+		Ui: 1 << 10,
+		InputVolumeMeters: 1 << 16,
+		InputActiveStateChanged: 1 << 17,
+		InputShowStateChanged: 1 << 18,
+		SceneItemTransformChanged: 1 << 19,
+		All: 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 16 | 1 << 17 | 1 << 18 | 1 << 19
+	}
 
 	_rpcVersion := 0
 	_requestId := 1 ; a simple id
 	_eventSubscriptions := 0
 	_pwd := 0
+	_IEGui := 0
 
 	__New(websocketUrl, pwd := 0, subscriptions := 0) {
 		this._eventSubscriptions := subscriptions
 		this._pwd := pwd
-		base.__New(websocketUrl)
+		this.__CreateBasicWS(websocketUrl)
+	}
+
+	__CreateBasicWS(WS_URL) {
+		this._IEGui := Gui()
+		this.WB := this._IEGui.Add("ActiveX", "", "Shell.Explorer").Value
+		this.WB.Navigate("about:<!DOCTYPE html><meta http-equiv='X-UA-Compatible' content='IE=edge'><body></body>")
+		while (this.WB.ReadyState < 4)
+			Sleep(50)
+		this.document := this.WB.document
+		this.document.parentWindow.ahk_event := this.__WSEvent.Bind(this)
+		this.document.parentWindow.ahk_ws_url := WS_URL
+		Script := this.document.createElement("script")
+		Script.text := "ws = new WebSocket(ahk_ws_url);`n"
+		. "ws.onopen = function(event){ ahk_event('OnOpen', event); };`n"
+		. "ws.onclose = function(event){ ahk_event('OnClose', event); };`n"
+		. "ws.onerror = function(event){ ahk_event('OnError', event); };`n"
+		. "ws.onmessage = function(event){ ahk_event('OnMessage', event); };`n"
+		. "var ab, bin;"
+		. "function newBin(len) { ab = new ArrayBuffer(len); bin = new Uint8Array(ab); }"
+		. "function addToBin(pos, byte) { bin[pos]=byte; }"
+		. "function sendBin() { ws.send(ab); }"
+
+		this.document.body.appendChild(Script)		
+	}
+
+	__CallFunction(functionName, arg:="") {
+		if (this.HasMethod(functionName)) {
+			if (arg)
+				this.%functionName%(arg)
+			else
+				this.%functionName%()
+		}
+	}
+
+	__GetStatusCode(statusCodeObject, valueToMatch) {
+		for (key, value in statusCodeObject.OwnProps()) {
+			if (value = valueToMatch) {
+				return key
+			}
+		}
+		return ""
+	}
+
+	__WSEvent(EventName, Event)	{
+		if (this.HasMethod(EventName))
+			this.%EventName%(Event)
 	}
 
 	OnOpen(Event) {
 	}
 
 	OnMessage(Event) {
-		value := JSON.Load( Event.data )
-		if (value.op = this.WebSocketOpCode.RequestResponse) {
-			if (value.d.requestStatus.code != this.RequestStatus.Success) {
-				MsgBox, % "Error, RequestStatus " value.d.requestStatus.code " | " value.d.requestStatus.comment
+		value := MapToObject(JSON.parse(Event.data))
+		if (value.op = OBSWebSocket.WebSocketOpCode.RequestResponse) {
+			if (value.d.requestStatus.code != OBSWebSocket.RequestStatus.Success) {
+				errorTxt := "Error, RequestStatus: "
+				errorTxt := errorTxt . this.__GetStatusCode(OBSWebSocket.RequestStatus, value.d.requestStatus.code)
+				errorTxt := errorTxt . " (" . value.d.requestStatus.code . ")"
+				if (value.d.requestStatus.HasOwnProp("comment")) {
+					errorTxt := errorTxt . " | " . value.d.requestStatus.comment
+				}
+				TrayTip(errorTxt, "OBSWebSocket", "Icon!")
 				return
 			}
 			; if the requestId starts with __, then it is an "internal" call
 			if (InStr(value.d.requestId,"__") = 1) {
-				this["__" . value.d.requestType . "Response"](value)	
-			} else {				
-				this[value.d.requestType . "Response"](value)
+				this.__CallFunction("__" . value.d.requestType . "Response", value)
+			} else {
+				this.__CallFunction(value.d.requestType . "Response", value)
 			}
-		} else if (value.op = this.WebSocketOpCode.Event) {
-			this[value.d.eventType . "Event"](value)
-		} else if (value.op = this.WebSocketOpCode.Hello) {
+		} else if (value.op = OBSWebSocket.WebSocketOpCode.Event) {
+			this.__CallFunction(value.d.eventType . "Event", value)
+		} else if (value.op = OBSWebSocket.WebSocketOpCode.Hello) {
 			this._rpcVersion := value.d.rpcVersion
 
-			helloAnswer := {op: this.WebSocketOpCode.Identify,d: {rpcVersion: this._rpcVersion, eventSubscriptions: this._eventSubscriptions}}
-			if (value.d.authentication) {
+			helloAnswer := {op: OBSWebSocket.WebSocketOpCode.Identify,d: {rpcVersion: this._rpcVersion, eventSubscriptions: this._eventSubscriptions}}
+			if (value.d.HasOwnProp("authentication")) {
 				helloAnswer.d.authentication := this.__GenerateSecretHash(value.d.authentication)
 			}
 			this.Send(this.__ReplaceBooleanValuesInJSON(helloAnswer))
-		} else if (value.op = this.WebSocketOpCode.Identified) {
-			this["AfterIdentified"]()
-		} 
+		} else if (value.op = OBSWebSocket.WebSocketOpCode.Identified) {
+			this.__CallFunction("AfterIdentified")
+		}
 	}
 
 	OnClose(Event) {
-		MsgBox, % "Websocket Closed: " Event.data
+		TrayTip("Websocket Closed", "OBSWebSocket", "Iconi")
 		this.Disconnect()
 	}
 
 	OnError(Event) {
-		MsgBox, % "Websocket Error "
+		TrayTip("Websocket Error", "OBSWebSocket", "Iconx")
 		ExitApp
+	}
+
+	Send(Data)
+	{
+		if (!this.document.parentWindow.ws.readyState) {
+			TrayTip("Websocket state " . this.document.parentWindow.ws.readyState . " is not ready", "OBSWebSocket", "Iconi")
+		}
+		this.document.parentWindow.ws.send(Data)
 	}
 
 	__Delete() {
-		MsgBox, Exiting
+		TrayTip("Exiting...", "OBSWebSocket", "Iconi")
+		this.Disconnect()
 		ExitApp
 	}
 
+	Disconnect()
+	{
+		if this._IEGui
+		{
+			this.document.close()
+			this._IEGui.Destroy()
+		}
+	}
+
+	__StringToBase64(String, Encoding := "UTF-8")
+	{
+		static CRYPT_STRING_BASE64 := 0x00000001
+		static CRYPT_STRING_NOCRLF := 0x40000000
+
+		Binary := Buffer(StrPut(String, Encoding))
+		StrPut(String, Binary, Encoding)
+		if !(DllCall("crypt32\CryptBinaryToStringW", "Ptr", Binary, "UInt", Binary.Size - 1, "UInt", (CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF), "Ptr", 0, "UInt*", &Size := 0))
+			throw OSError()
+
+		Base64 := Buffer(Size << 1, 0)
+		if !(DllCall("crypt32\CryptBinaryToStringW", "Ptr", Binary, "UInt", Binary.Size - 1, "UInt", (CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF), "Ptr", Base64, "UInt*", Size))
+			throw OSError()
+
+		return StrGet(Base64)
+	}
+
 	__GenerateSecretHash(helloResult) {
-		hex := LC_SHA256(this._pwd . helloResult.salt)
-		LC_Hex2Bin(b64Secret, hex)
-		LC_Base64_Encode(b64SecretChallenge, b64Secret, StrLen(hex) / 2)
-		hex := LC_SHA256(b64SecretChallenge . helloResult.challenge)
-		LC_Hex2Bin(b64Secret, hex)
-		LC_Base64_Encode(authentication, b64Secret, StrLen(hex) / 2)
+		hex := Hash.String("SHA256", this._pwd . helloResult.salt)
+		b64Secret := Hex2Bin(hex)
+		b64SecretChallenge := Base64Encode(b64Secret, StrLen(hex) >> 1)
+
+		hex := Hash.String("SHA256", b64SecretChallenge . helloResult.challenge)
+		b64Secret := Hex2Bin(hex)
+		authentication := Base64Encode(b64Secret, StrLen(hex) >> 1)
 		return authentication
 	}
 
 	__ReplaceBooleanValuesInJSON(obj) {
-		string := JSON.Dump(obj)
-		string := StrReplace(string, """true""", "true")
-		string := StrReplace(string, """false""", "false")
-		string := RegExReplace(string, "(""(-*\d+\.*\d*)"")", "$2")
+		string := JSON.stringify(obj)
+		; TODO: check whether this conversion is still needed
+		string := StrReplace(string, '"true"', "true")
+		string := StrReplace(string, '"false"', "false")
+		string := RegExReplace(string, '("(-*\d+\.*\d*)")', "$2")
 		return string
 	}
 
 	__GetFunctionName(funcName) {
-		return StrReplace(funcName, "OBSWebSocket.", "")
+		return StrReplace(funcName, "OBSWebSocket.Prototype.", "")
 	}
 
 	Boolean(booleanValue) {
@@ -189,7 +283,7 @@ class OBSWebSocket extends WebSocket
 		if (!requestId) {
 			requestId := this.GetRequestId()
 		}
-		request := { op: this.WebSocketOpCode.Request, d: { requestType: requestType, requestId: requestId }}
+		request := { op: OBSWebSocket.WebSocketOpCode.Request, d: { requestType: requestType, requestId: requestId }}
 		if (requestData != 0) {
 			request.d.requestData := requestData
 		}
@@ -713,11 +807,11 @@ class OBSWebSocket extends WebSocket
 		this.SendRequestToObs(A_ThisFunc, requestId)
 	}
 
-	; Implementations which are not in OBSProject
+	; Extra implementations which are not in OBSProject
 
 	; get all the scene items and group items under one scene (groups have to be requested separately)
 	__GetFullSceneItemListResponseData := 0 ; full response data this script will emit
-	__GetFullSceneItemListWaitingForResponse := {} ; housekeeping about sent and received messages
+	__GetFullSceneItemListWaitingForResponse := Map() ; housekeeping about sent and received messages
 	GetFullSceneItemList(sceneName, requestId := 0) {
 		this.__GetFullSceneItemListWaitingForResponse[sceneName] := 1
 		this.GetSceneItemList(sceneName, "__" . sceneName . "#" . requestId)
@@ -752,8 +846,55 @@ class OBSWebSocket extends WebSocket
 				this.__GetFullSceneItemListResponseData.d.responseData.sceneItems.push(sceneItemData)
 			}
 		}
-		if (this.__GetFullSceneItemListWaitingForResponse.Count() = 0) {
-			this["GetFullSceneItemListResponse"](this.__GetFullSceneItemListResponseData)
+		if (this.__GetFullSceneItemListWaitingForResponse.Count = 0) {
+			this.__CallFunction("GetFullSceneItemListResponse", this.__GetFullSceneItemListResponseData)
 		}
 	}
+}
+
+; ---------- UTILITIES
+
+MapToObject(mapPart) {
+	objPart := {}
+	For Key, Value in mapPart {
+		if (Value.base.__Class = "Map") {
+			objPart.%key% := MapToObject(Value)
+		} else if (Value.base.__Class = "Array") {
+			objPart.%key% := MapToArray(Value)
+		} else {
+			objPart.%key% := Value
+		}
+	}
+	return objPart
+}
+
+MapToArray(mapPart) {
+	arrPart := []
+	For Key, Value in mapPart {
+		if (Value.base.__Class = "Map") {
+			arrPart.Push(MapToObject(Value))
+		} else if (Value.base.__Class = "Array") {
+			arrPart.Push(MapToArray(Value))
+		} else {
+			arrPart.Push(Value)
+		}
+	}
+	return arrPart
+}
+
+Hex2Bin(hex) {
+	inLength := StrLen(hex)
+	outLength := inLength >> 1
+	out := ""
+	VarSetStrCapacity(&out, outLength)
+	DllCall("Crypt32.dll\CryptStringToBinary", "Ptr", StrPtr(hex), "UInt", inLength, "UInt", 0x8, "Str", out, "UInt*", outLength, "Ptr", 0, "Ptr", 0)
+	return out
+}
+
+Base64Encode(text, inLength) {
+	outLength := inLength << 1
+	out := ""
+	VarSetStrCapacity(&out, outLength)
+	DllCall("Crypt32\CryptBinaryToStringW", "Ptr", StrPtr(text), "UInt", inLength, "UInt", 0x40000001, "Str", out, "UInt*", outLength)
+	return out
 }

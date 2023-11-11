@@ -1,7 +1,8 @@
-﻿#NoEnv
-SetBatchLines, -1
+﻿#Requires AutoHotkey >=2.0-
+#Include lib/ObsWebSocket.ahk
 
-#Include lib/OBSWebSocket.ahk
+; You will need two scenes "Be right back" and "Gaming"
+; There should be a "Mic/Aux" input device in the Audio Mixer
 
 class MyOBSController extends OBSWebSocket {
 
@@ -27,8 +28,6 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)
+obsc := MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)
 
-F12::
-	obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
-	return
+F12::obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))

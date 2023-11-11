@@ -1,18 +1,16 @@
-﻿#NoEnv
-SetBatchLines, -1
-
+﻿#Requires AutoHotkey >=2.0-
 #Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends ObsWebSocket {
 
-	state :=
+	state := 0
 
 	AfterIdentified() {
 		this.GetCurrentProgramScene()
 	}
 
 	GetSceneItemListResponse(data) {
-		sceneItemIdsByName := {}
+		sceneItemIdsByName := Map()
 		For Key, sceneItemData in data.d.responseData.sceneItems
 		{
 			sceneItemIdsByName[sceneItemData.sourceName] := sceneItemData.sceneItemId
@@ -36,33 +34,28 @@ class MyOBSController extends ObsWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 
 ; set active scene to SceneA
-Numpad1::
-	obsc.changeScene("SceneA")
-return
+Numpad1::obsc.changeScene("SceneA")
 
 ; set active scene to SceneB and set ItemB to visible
-Numpad2::
+Numpad2:: {
+	global
 	obsc.changeScene("SceneB")
-	Sleep, 100 ; wait for scene change
+	Sleep(100) ; wait for scene change
 	obsc.toggleSceneItem("SceneB", "ItemB", true)
-return
+}
 
 ; set active scene to SceneB and set ItemB to hidden
-Numpad3::
+Numpad3:: {
+	global
 	obsc.changeScene("SceneB")
-	Sleep, 100 ; wait for scene change
+	Sleep(100) ; wait for scene change
 	obsc.toggleSceneItem("SceneB", "ItemB", false)
-return
-
+}
 ; set ItemC to visible on SceneC, doesn't matter if SceneC is visible or not
-Numpad4::
-	obsc.toggleSceneItem("SceneC", "ItemC", true)
-return
+Numpad4::obsc.toggleSceneItem("SceneC", "ItemC", true)
 
 ; set ItemC to hidden on SceneC, doesn't matter if SceneC is visible or not
-Numpad5::
-	obsc.toggleSceneItem("SceneC", "ItemC", false)
-return
+Numpad5::obsc.toggleSceneItem("SceneC", "ItemC", false)

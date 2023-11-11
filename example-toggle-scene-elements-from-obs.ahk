@@ -1,12 +1,10 @@
-﻿#NoEnv
-SetBatchLines, -1
-
+﻿#Requires AutoHotkey >=2.0-
 #Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends ObsWebSocket {
 
 	sceneName := "Scene"
-	sceneItemsByName := {}
+	sceneItemsByName := Map()
 
 	AfterIdentified() {
 		this.GetSceneItemList(this.sceneName)
@@ -21,8 +19,17 @@ class MyOBSController extends ObsWebSocket {
 		}
 	}
 
+	findSceneItemNameById(sceneItemId) {
+		for (key, value in this.sceneItemsByName) {
+			if (sceneItemId = value.id) {
+				return value.name
+			}
+		}
+		return ""
+	}
+
 	toggleSceneItem(sceneItem) {
-		if (!this.sceneItemsByName[sceneItem]) {
+		if (!this.sceneItemsByName.Has(sceneItem)) {
 			return
 		}
 		this.sceneItemsByName[sceneItem].enabled := !this.sceneItemsByName[sceneItem].enabled
@@ -36,15 +43,21 @@ class MyOBSController extends ObsWebSocket {
 		; if the scene name is the same as we defined earlier, we can act
 		if (data.d.eventData.sceneName = this.sceneName) {
 
+			sceneItemName := this.findSceneItemNameById(data.d.eventData.sceneItemId)
+			if (!sceneItemName) {
+				return
+			}
 			; let's save the current scene item visibility, just so AHK will remember it too
-			this.sceneItemsByName[data.d.eventData.sceneItemId].enabled = data.d.eventData.sceneItemEnabled
+			this.sceneItemsByName[sceneItemName].enabled := data.d.eventData.sceneItemEnabled
 
 			; if "Audio Input Capture" scene item is enabled/disabled in OBS, we will trigger "Video Capture Device" to behave the same
-			if (data.d.eventData.sceneItemId = this.sceneItemsByName["Audio Input Capture"].id) {
+			if (data.d.eventData.sceneItemId = this.sceneItemsByName["Audio Input Capture"].id &&
+				this.sceneItemsByName["Video Capture Device"].enabled != data.d.eventData.sceneItemEnabled) {
 				; note that calling SetSceneItemEnabled will trigger OBS to send a SceneItemEnableStateChanged event
 				this.SetSceneItemEnabled(this.sceneName, this.sceneItemsByName["Video Capture Device"].id, this.Boolean(data.d.eventData.sceneItemEnabled))
 			}
-			if (data.d.eventData.sceneItemId = this.sceneItemsByName["Video Capture Device"].id) {
+			if (data.d.eventData.sceneItemId = this.sceneItemsByName["Video Capture Device"].id &&
+				this.sceneItemsByName["Audio Input Capture"].enabled != data.d.eventData.sceneItemEnabled) {
 				this.SetSceneItemEnabled(this.sceneName, this.sceneItemsByName["Audio Input Capture"].id, this.Boolean(data.d.eventData.sceneItemEnabled))
 			}
 		}
@@ -52,7 +65,7 @@ class MyOBSController extends ObsWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.SceneItems )
+obsc := MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.SceneItems )
 
 F9::obsc.toggleSceneItem("Video Capture Device")
 F10::obsc.toggleSceneItem("Audio Input Capture")

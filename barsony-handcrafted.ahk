@@ -1,65 +1,66 @@
 ﻿/**
  * Bar_sony twitch channel controller script
  *
- * 🔃 Updated: 2023-03-05 (YYYY-MM-DD)
+ * 🔃 Updated: 2023-11-10 (YYYY-MM-DD)
  *
  * ⚠ Requirements:
- *     Latest version of AutoHotkey (v1.1+ or v2.0-a+)
- *     ObsWebSocket.ahk (and its requirements) - https://github.com/5ony/OBSWebSocketAHK
+ *   Latest version of AutoHotkey (v2.0+)
+ *   ObsWebSocket.ahk (and its requirements) - https://github.com/5ony/OBSWebSocketAHK
  *
  * ❓ What does this script do:
- *	- when muting my microphone, it will show a GUI with red background and will set the
- *	  LED strips to red. If there is no IP address like that, this can slow the whole script.
- *	- unmuting will remove the GUI and set the LED strip to green temporarily
- *	- un/muting can happen with hotkey or in OBS.
- *	- if the mic is muted when OBS and this script starts, the red GUI is shown
- *	- numpad keys activate some items (gif memes) in order.
- *	  The order is not random, but sequential to show variance.
- *	- all sceneitems and some named inputs state is tracked and synchrnoized,
- *	  even though it is not necessarily needed. However, I have nested scenes, where I show
- *	  a scene item, then disabling it (the meme part). So in order to do that, I just read
- *	  every scene items from every scenes.
- *	- some housekeeping is added (when changing profile, removing or adding scenes/items),
- *	  but if there were any organization on the scenes, it is just better to restart the script.
- * 
+ *  - when muting my microphone, it will show a GUI with red background and will set the
+ *    LED strips to red. If there is no IP address like that, this can slow the whole script.
+ *  - unmuting will remove the GUI and set the LED strip to green temporarily
+ *  - un/muting can happen with hotkey or in OBS.
+ *  - if the mic is muted when OBS and this script starts, the red GUI is shown
+ *  - numpad keys activate some items (gif memes) in order.
+ *    The order is not random, but sequential to show variance.
+ *  - all sceneitems and some named inputs state is tracked and synchrnoized,
+ *    even though it is not necessarily needed. However, I have nested scenes, where I show
+ *    a scene item, then disabling it (the meme part). So in order to do that, I just read
+ *    every scene items from every scenes.
+ *  - some housekeeping is added (when changing profile, removing or adding scenes/items),
+ *    but if there were any organization on the scenes, it is just better to restart the script.
+ *
  *
  * 🚧 To Do:
- *	- if an input name is changed, let's change in the inputs variable as well (InputNameChangedEvent)
+ *  - if an input name is changed, let's change in the inputs variable as well (InputNameChangedEvent)
  *  - handle InputActiveStateChangedEvent and InputShowStateChangedEvent
  *
  * 🔗 Links:
- *     GitHub: https://github.com/5ony/OBSWebSocketAHK
- *     Buy me a coffee: https://ko-fi.com/barsony
+ *   GitHub: https://github.com/5ony/OBSWebSocketAHK
+ *   Buy me a coffee: https://ko-fi.com/barsony
  */
 
-#NoEnv
-SetBatchLines, -1
+#Requires AutoHotkey >=2.0-
+#Include lib/OBSWebSocket.ahk
 
-#Include lib/ObsWebSocket.ahk
+showNumpadHelper()
 
-
-sceneNames := { gamingSceneName: "🎮📷 Gaming with cam [PgDn]"
-	, memeSceneName : "Effect - Gaming - meme"
-	, empty: "Empty"
-	, starting: "▶ Stream start - [F11]"
-	, ending: "⏹ Stream end"
-	, breaking: "⏸ Gaming szünet [End]" }
+sceneNames := {
+	gamingSceneName: "🎮📷 Gaming with cam [PgDn]",
+	 memeSceneName : "Effect - Gaming - meme",
+	          empty: "Empty",
+	       starting: "▶ Stream start - [F11]",
+	         ending: "⏹ Stream end",
+	       breaking: "⏸ Gaming szünet [End]"
+}
 
 class MyOBSController extends ObsWebSocket {
 
 	currentProgramSceneName := ""
-	scenes := {}
-	inputs := {}
-	_initedScenes := {}
+	scenes := Map()
+	inputs := Map()
+	_initedScenes := Map()
 	isInited := false
 	microphoneName := "🎤Mikrofon"
 	state := ""
 
 	AfterIdentified() {
-		this._initedScenes := {}
+		this._initedScenes := Map()
 		this.GetSceneList()
 
-		this.inputs := {}
+		this.inputs := Map()
 		this.GetInputList()
 	}
 
@@ -67,7 +68,7 @@ class MyOBSController extends ObsWebSocket {
 	GetSceneListResponse(data) {
 		this.currentProgramSceneName := data.d.responseData.currentProgramSceneName
 		For Key, sceneData in data.d.responseData.scenes {
-			this.scenes[sceneData.sceneName] := { sceneIndex: sceneData.sceneIndex }
+			this.scenes[sceneData.sceneName] := Map()
 			this._initedScenes[sceneData.sceneName] := 0
 			this.GetSceneItemList(sceneData.sceneName, sceneData.sceneName)
 		}
@@ -114,7 +115,7 @@ class MyOBSController extends ObsWebSocket {
 	GetInputMuteResponse(data) {
 		inputName := data.d.requestId
 		this.inputs[data.d.requestId] := data.d.responseData.inputMuted
-		
+
 		; show a gui depending on the named microphone status
 		if (inputName = this.microphoneName) {
 			this.showMutedGUI(data.d.responseData.inputMuted)
@@ -215,7 +216,7 @@ class MyOBSController extends ObsWebSocket {
 
 	showSceneDelayed(sceneName, sceneItem, delayTime) {
 		this.sceneItemShow(sceneName, sceneItem)
-		Sleep, delayTime
+		Sleep(delayTime)
 		this.sceneItemHide(sceneName, sceneItem)
 	}
 
@@ -225,35 +226,39 @@ class MyOBSController extends ObsWebSocket {
 
 	; shows a mute sign with red background in top right of the secondary screen
 	showMutedGUI(isMuted) {
+		static ShowMutedState := 0
 		if (isMuted) {
-			Gui -Border -Caption +Disabled +AlwaysOnTop
-			Gui +ToolWindow
-			Gui Margin, 0, 0
-			Gui Color, FF0000
-
-			Gui Font, s64 cFFFFFF, Segoe UI Emoji
-			Gui Add, Text, , 🔇
-			Gui +LastFound +0x80000 ; Set WS_EX_LAYERED style
-			Gui Show, x-120 y50 NoActivate, ShowMutedState
-			WinSet, TransColor, 180
+			if (ShowMutedState) {
+				ShowMutedState.Show()
+				return
+			}
+			ShowMutedState := Gui()
+			ShowMutedState.Opt("-Border -Caption +Disabled +AlwaysOnTop +ToolWindow")
+			ShowMutedState.MarginX := 0
+			ShowMutedState.MarginY := 0
+			ShowMutedState.BackColor := "FF0000"
+			ShowMutedState.SetFont("s64 cFFFFFF", "Segoe UI Emoji")
+			ShowMutedState.Add("Text", "", "🔇")
+			ShowMutedState.Show("x-120 y50 NoActivate")
 			this.sendColorToLedStrip("C0074FF0000")
 		} else {
-			WinClose, ShowMutedState
+			if (ShowMutedState) {
+				ShowMutedState.Destroy()
+			}
 			this.sendColorToLedStrip("C007400FF00")
-			Sleep, 100
+			Sleep(100)
 			this.sendColorToLedStrip("R")
 		}
 	}
 
 	; updates LED strip color
 	sendColorToLedStrip(ledControlParams) {
-		return
 		Try {
-			whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-			wrh.SetTimeouts(500, 500, 100, 100)
+			whr := ComObject("WinHttp.WinHttpRequest.5.1")
+			whr.SetTimeouts(500, 500, 100, 100)
 			whr.Open("GET", "http://192.168.1.116?led=" . ledControlParams)
-			whr.Send(requestBody)
-		} Catch err
+			whr.Send()
+		} Catch Error as err
 		{
 			; noop, no success = no problem
 		}
@@ -261,33 +266,36 @@ class MyOBSController extends ObsWebSocket {
 
 	streamingStart() {
 		this.SetCurrentProgramScene("Empty")
-		Sleep, 1000
+		Sleep(1000)
 		this.StartStream()
-		Sleep, 2000
+		Sleep(2000)
 		this.SetCurrentProgramScene("▶ Stream start - [F11]")
-		Sleep, 96000 ; 1:35
+		Sleep(96000) ; 1:35
 		this.SetCurrentProgramScene("🎮📷 Gaming with cam [PgDn]")
 	}
 
 	streamingEnd() {
 		this.SetCurrentProgramScene("⏹ Stream end")
-		Sleep, 30000 ; 0:30
+		Sleep(30000) ; 0:30
 		this.StopStream()
 	}
 }
 
 showGifMeme(sceneItemPreName, sceneItemCount) {
-	global seq
-	global obsc
-	global sceneNames
+	global
 	seq := seq + 1
 	sceneItemName := sceneItemPreName . (Mod(seq, sceneItemCount) + 1) . ".gif"
 	obsc.showSceneDelayed(sceneNames.memeSceneName, sceneItemName, 4000)
 }
 
+showNumpadHelper() {
+	Run("E:\Munka\obs-websocket-ahk-dev\barsony-handcrafted-keys.jpg")
+	WinWaitActive("ahk_exe i_view64.exe")
+	WinMove(-827, 146, 221, 412)
+}
 
 events := MyOBSController.EventSubscription.Config | MyOBSController.EventSubscription.Scenes | MyOBSController.EventSubscription.SceneItems | MyOBSController.EventSubscription.InputActiveStateChanged | MyOBSController.EventSubscription.InputShowStateChanged | MyOBSController.EventSubscription.Inputs
-obsc := new MyOBSController("ws://127.0.0.1:4455/","", events)
+obsc := MyOBSController("ws://127.0.0.1:4455/","", events)
 
 ; a sequential counter for not showing the same meme in a row in a meme group
 seq := 0
@@ -307,7 +315,8 @@ NumpadMult::obsc.SetInputMute("Audio - Discord", obsc.Boolean(true))
 NumpadDiv::obsc.SetInputMute("Audio - Game", obsc.Boolean(true))
 
 ; kill
-Numpad1::
+Numpad1::{
+	global
 	seq := seq + 1
 	if (Mod(seq, 3) = 0)
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - yeahboi", 2000)
@@ -316,7 +325,7 @@ Numpad1::
 	if (Mod(seq, 3) = 2)
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - kaboom-kaboom", 3000)
 	return
-
+}
 ; 👊 execute / hit
 Numpad2::showGifMeme("hit_", 7)
 
@@ -324,20 +333,23 @@ Numpad2::showGifMeme("hit_", 7)
 Numpad3::showGifMeme("confused_", 19)
 
 ; 😨 panic
-Numpad4::
+Numpad4::{
+	global
 	seq := seq + 1
 	if (!Mod(seq, 8)) {
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - hit markers", 3500)
 	} else {
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "panic_" . (Mod(seq, 3)) . ".gif", 4000)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "panic_" . (Mod(seq, 3) + 1) . ".gif", 4000)
 	}
 	return
+}
 
 ; 🏃‍ running away
 Numpad5::showGifMeme("running_away_", 4)
 
 ; 💀 dead
-Numpad6::
+Numpad6::{
+	global
 	seq := seq + 1
 	if (Mod(seq, 4) = 0)
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - to be continued", 10000)
@@ -347,11 +359,11 @@ Numpad6::
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - coffin dance", 11000)
 	if (Mod(seq, 4) = 3) {
 		obsc.SetCurrentProgramScene("Effect - Gaming - we'll be right back")
-		Sleep, 4000
+		Sleep(4000)
 		obsc.SetCurrentProgramScene(sceneNames.gamingSceneName)
 	}
 	return
-
+}
 ; 🥇 golden loot
 Numpad8::showGifMeme("gold_loot_", 7)
 

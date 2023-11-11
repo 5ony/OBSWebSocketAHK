@@ -1,10 +1,12 @@
-﻿# OBS WebSocket for AutoHotKey
+# OBS WebSocket for AutoHotKey v2.0+
+
+Looking for v1.1? [Click here](https://github.com/5ony/OBSWebSocketAHK/tree/1.1.1)
 
 Handling OBS Studio via WebSocket with AutoHotKey.
 
 This AutoHotKey library handles OBS websocket version: 5.0.1
 
-Basic functionality tested with OBS Studio 28.0.3 (64 bit), 29.0.0
+Basic functionality tested with OBS Studio 29.1.3 (64 bit)
 
 Get to the point 🡺 check the first script under [Examples](#-examples)
 
@@ -16,89 +18,73 @@ Let be here some inspiration:
 
 - [Change text](#change-text) with hotkeys, for example for changing scores
 
-- [activate a scene/item/filter](#toggle-filter-settings) when health is low in a game (by watching health bar pixels) or an effect is on
+- [Activate a scene/item/filter](#toggle-filter-settings) (i.e. for appling a filter on your webcam when health is low in game, etc.)
 
-- changing to a "Score screen" opens a local excel table where results can be displayed, changed and shown to the audience; pressing another hotkey would change back the scene and close the excel
+- [Start a scheduled recording](#start-a-scheduled-recording)
 
-- muting the main microphone (by hotkey or in OBS) can set a LED strip to red and show a red GUI
+- Showing different memes on stream by pressing the same key over and over (check my personal script for this)
 
-I am open for suggestions! Let me know what you think about this script or how can I improve it.
-Also, I would love to see what processes you have implemented with this script.
+- Muting the main microphone (by hotkey or in OBS) can set a LED strip to red and show a red GUI (check my personal script for this)
 
-Want to see a real life example?
+- Changing to a "Score screen" opens a local excel table where results can be displayed, changed and shown to the audience; pressing another hotkey would change back the scene and close the excel
+
+🎉 Want to see a real life example?
 [Here is my personal script.](https://github.com/5ony/OBSWebSocketAHK/blob/main/barsony-handcrafted.ahk)
-Make sure you read its documentation. I'm sure it will not work at you because of the OBS scene setup, but it shows how can all the stuff below implemented into one script.
+Make sure you read its documentation. I'm sure __it will not work at you__ because of the OBS scene setup, but it shows how can all the stuff below implemented into one script.
 (To be fair, I should make a more compact version of the script to be usable by anyone.)
 
-You will need the following AHK libraries too:
-
-- [G33kDude's Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk)
-- [G33kDude's JSON.ahk 0.4.1](https://github.com/G33kDude/cJson.ahk/releases/download/0.4.1/JSON.ahk)
-- [ahkscript/libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk)
-
-⚠ This code is under development.
-
-All available OBS websocket functions are implemented, but not all tested.
-
-[OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md) should be the No.1 resource when it comes to actions, events, parameters and data structures.
+💡 I am open for suggestions! Let me know what you think about this script or how can I improve it.
+Also, I would love to see what processes you have implemented with this script.
 
 ## 🔀 Change log
 
-### v1.1.1
+### v2.0.0
 
-- added GetFullSceneItemList() method to request all scene items, including items under groups (by default OBS gets back only the top level scene items)
-- modified the example script to use GetFullSceneItemList() method
-
-### v1.1.0 ❗ breaking change
-
-- changed JSON library
-- added requestId: every method, which request OBS now have an optional requestId as a last parameter. Getter functions do not always give back the information sent when calling. With requestId it is possible to pair the sent information to the received one (data.d.requestId). If you are using the SendRequestToObs() method directly, the parameter order changed, hence it is a breaking change.
-- added barsony-handcrafted.ahk: my personal streaming script. I do not stream too much, but I had fun writing the script. It is tailored to my specially organized scene items, so it surely will not work out of the box. There is a small documentation in the code at the header.
-- reorganized the order of message processing
-- fixed some non-working methods
-
-### v1.0.0
-
-- initial version
+- rewritten for AutoHotKey v2.0
+- merged websocket handling to remove library dependency
+- changed libraries
+- changed MsgBox popups to a more elegant TrayTip notification
+- added more examples
 
 ### 🚧 To do (Might do)
 
-* Check (rewrite) scripts under AHK v2.0
+* Better true/false values
 * Screenshots from the OBS setup, Wireshark and UTF-8 with BOM
 * Make a script to be usable in a general OBS scene setup
-* Internet Explorer (websocket) throws error when connection is interrupted
 * Automatic connection retry
 * Automatic recovery from errors
 * Test all functionalities
 
 ## 🙏 Gratitude
 
-Thanks for G33kDude for [Websocket.ahk](https://github.com/G33kDude/WebSocket.ahk) and [JSON.ahk](https://github.com/G33kDude/cJson.ahk/releases/download/0.4.1/JSON.ahk), joedf and Masonjar13 for [libcrypt.ahk](https://github.com/ahkscript/libcrypt) and of course the AHK community, the OBS websocket and OBS Studio guys.
+Thanks for [G33kDude](https://github.com/G33kDude) for the original websocket and json script, joedf and Masonjar13 for libcrypt.ahk and of course the AHK community, the OBS websocket and OBS Studio guys.
 
-Please support these guys and if you want to support me with a coffee, I thank you for that, you can do it here:
+Please support them and if I have earned a coffee from you, please be kind to support me here:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/N4N6FX30H)
 
 ## 💥 Quick setup
 
-- Download these codes, and put them under a lib directory
-	- [OBSWebSocket.ahk](https://github.com/5ony/OBSWebSocketAHK/blob/main/lib/OBSWebSocket.ahk)
-	- [WebSocket.ahk](https://github.com/G33kDude/WebSocket.ahk/blob/master/WebSocket.ahk)
-	- [JSON.ahk](https://github.com/cocobelgica/AutoHotkey-JSON/blob/master/JSON.ahk)
-	- [libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk/blob/master/build/libcrypt.ahk)
-
+- Download a release version. For easier setup, release version includes these libraries:
+	- [JSON.ahk](https://github.com/thqby/ahk2_lib/blob/master/JSON.ahk)
+	- [Class_CNG.ahk](https://github.com/jNizM/AHK_CNG/blob/master/src/Class_CNG.ahk)
 - Open OBS Studio, and navigate to Tools -> Websocket Server Settings, and leave the window open.
-- Click on Show Connect Info button.
-- Remove the Server Password. You can use it with password too, but it might be easier to try it without password. Also, all of the examples are without password.
-- Copy the full IP address and port to your AHK script ("localhost:4455" will not be enough, but "127.0.0.1:4455" works fine).
+- Uncheck "Enable Authentication" to use the examples without password. (You can use your own scripts with password.)
+- Click on "Show Connect Info" button.
+- If the script will run from a different computer than where OBS Studio runs, copy the IP addess from here to your scripts.
+- Remember/copy the port as well (by default it is 4455).
 - You can close the "Websocket connect info" window, but keep the "Websocket Server Settings" window open.
-- Create a simple script where the lib directory resides.
+- Create a simple script.
 
 ```
 #Include lib/OBSWebSocket.ahk
 
-obsc := new OBSWebSocket("ws://127.0.0.1:4455/")
+obsc := OBSWebSocket("ws://127.0.0.1:4455/")
+; or, if you are using password:
+; obsc := MyOBSController("ws://127.0.0.1:4455/", "YourPasswordHere")
+
 ```
+- If you are using on your local computer, you can use address "127.0.0.1:4455" ("localhost:4455" is not enough). Change the port if necessary.
 - You can run your script and the OBS's Connected WebSocket Sessions list should show a new connection.
 
 - For listening to OBS Studio responses and events you might want to create your own class of OBSWebSocket:
@@ -110,41 +96,27 @@ class MyOBSController extends OBSWebSocket {
 	; your complex functionality comes here
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
-
-; or, if you are using password:
-; obsc := new MyOBSController("ws://127.0.0.1:4455/", "YourPasswordHere")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 ```
 
-## General tips
+- [OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md) should be the No.1 resource when it comes to actions, events, parameters and data structures.
 
-When changing scenes it is easier to use SceneTransitionEnded event instead of CurrentProgramSceneChanged, because the latter one will trigger two changes: with the scene we are changing from and with the new one we are changing to (which you might or might not desire).
-SceneTransitionEnded will be triggered only once with the new scene.
+## ⚒ General working method
 
-## 🔍 Debugging
+There are two main concepts are when handling messages between OBS and AHK (this script): Requests and Events.
 
-### ✉ Websocket messages (optional)
+Requests are triggered by the script and have a Response.
+With a Request you can ask for lists of scenes, input devices, properties, and the response will contain the requested data.
 
-Messages can be intercepted with [WireShark](https://www.wireshark.org).
+An Event happens when something happens in OBS, such as the user changed a scene, started streaming.
+The catch is, a script can initiate an event too, so you can even make an infinite loop.
+Take care.
 
-Set the adapter to "Adapter for loopback traffic capture", set display filter to websocket. Use the script and if there is any messages between OBS and your script, it will be listed.
-You can check the message content.
-If the message content is masked, you can unmask it.
-Note that you might need the connection phase too for this to unmask the raw data.
+Simply put:
+- script Request 🡺 OBS ... OBS Response 🡺 script
+- OBS Event 🡺 script
 
-### 💌 Message data
-
-Highly recommended to use [scite4ahk](https://www.autohotkey.com/scite4ahk/).
-You can easily set breakpoints and check the format of the received data.
-It is a great AHK tool in general.
-
-### 🙂 Emojis
-
-If you are using emojis (in scene names, input names, or just in general), make sure you save the files with "UTF-8 with BOM" option.
-This can be set even in Windows Notepad.
-You might just have been saved from "Scene not found" error messages.
-
-## 🔄 Requests to OBS Studio
+### 🔄 Requests to OBS
 
 Requests towards OBS Studio usually have a response as well. Responses need a separate class method with the name of the request + 'Response'.
 
@@ -154,7 +126,7 @@ For example, checking OBS version:
 class MyOBSController extends OBSWebSocket {
 
 	AfterIdentified() {
-		obsc.GetVersion()
+		this.GetVersion()
 	}
 
 	GetVersionResponse(data) {
@@ -165,14 +137,21 @@ class MyOBSController extends OBSWebSocket {
 obsc := new MyOBSController("ws://127.0.0.1:4455/")
 ```
 Note that:
-- `obsc.GetVersion()` (or any other method) cannot be called after creating a new OBSWebSocket instance, because the connection is still under negotiation. Connecting to OBS needs time, and when the connection is successful, `AfterIdentified()` method will be called (if it is defined).
-- `obsc.GetVersion()` does not return anything in itself, a callback has to be defined as `GetVersionResponse()`
+- Every request and response are asynchronous, which means responses will arrive, but not in a timely manner, not even in order.
+- `AfterIdentified()` method is the one where your OBS script can start. OBS methods cannot be called instantly after creating a new OBSWebSocket instance, because the connection is already asynchronous, and it might be still under negotiation.  When the connection is successfully made, `AfterIdentified()` method will be called (if it is defined in your script).
+- Request methods do not return anything in itself, a callback has to be defined. For request `GetVersion` a callback should be called `GetVersionResponse`, which should handle the response data through an input parameter.
 
-The received data contains the full response from OBS in AutoHotKey object format. For the data structure, consult the [OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md)
+The received data contains the full response from OBS in AutoHotKey object format.
+For the data structure, consult the [OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md)
+Every request method is implemented with parameters.
 
-Every request is implemented with parameters. Object parameters handle AHK objects, but there is one exception; AHK's true and false values are only shorthands for 1 and 0 values. To circumvent this, true and false values should be handled as strings. To help this, you can use the Boolean() helper function (see example below).
+Object parameters handle AHK objects, but there is one exception; AHK's true and false values are only shorthands for 1 and 0 values.
+To circumvent this, true and false values should be handled as strings.
+To help this, you can use the Boolean() helper function (see example below).
 
-This function will convert every (and I mean EVERY) outbound (towards OBS) string "true" and "false" values to JavaScript's true and false values. Note that because of this limitation, you cannot use "true" or "false" strings as text values when sending requests to OBS.
+This function sets values as "true" and "false", and the script will convert every (and I mean EVERY) outbound (towards OBS) string "true" and "false" values to JavaScript's true and false values.
+Note that because of this limitation, you cannot use "true" or "false" strings as text values when sending requests to OBS.
+(This is a design flaw, I should change it I guess.)
 
 For example when muting the microphone:
 
@@ -184,32 +163,100 @@ obsc.SetInputMute("Mic/Aux", "true") ; this is the way
 obsc.SetInputMute("Mic/Aux", obsc.Boolean(true)) ; this is even better
 ```
 
-## ⚡ Event handling
+### ⚡ Event handling
 
-It is possible to subscribe to events coming from OBS at initialization. Check EventSubscription under OBSWebSocket.ahk for all the events. By default, events are dismissed to keep the unnecessary conversation between OBS and AHK on a minimum.
+It is possible to subscribe to events coming from OBS at initialization. Check `EventSubscription` under `OBSWebSocket.ahk` for all the events.
+By default, no event set to keep the unnecessary conversation between OBS and AHK on a minimum.
 
-To subscibe to events, list them at the class initialization:
-`obsc := new MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)`
+To subscibe to events, list them with a bitwise OR at the class initialization:
+`obsc := MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)`
 
-Note the bitwise `|`, do not fall into the `||` or `&` or `&&` trap.
+Note the bitwise `|`, which is not a logical decision `||`
 
-Events, similarly to the requests, need a function where data can be received. The function name should be event name + "Event".
-For example muting an input with `SetInputMute()` will emit an `InputMuteStateChanged` event; to handle that there should be an `InputMuteStateChangedEvent` function (method under your class) to handle the data sent by OBS.
+Events, similarly to the requests, need a function where data can be received. The function name should be "event name" + "Event".
+For example muting an input in OBS will emit an `InputMuteStateChanged` event; to handle that there should be an `InputMuteStateChangedEvent` function (method under your class) to handle the data sent by OBS.
 
 ```
 class MyOBSController extends OBSWebSocket {
 	InputMuteStateChangedEvent(data) {
 		inputName := data.d.inputName
 		inputMuted := data.d.inputMuted ? "muted 🔇" : "unmuted 🔊"
-		MsgBox, %inputName% is now %inputMuted%
+		MsgBox(inputName . " is now " . inputMuted)
 	}
 }
 ```
+
+However, the request `SetInputMute()` too will mute an input, hence triggering the same `InputMuteStateChanged` event.
+
+## Tips
+
+### 🛅 Names vs ID
+
+Some responses give back ID numbers, some requests need ID numbers as an input parameter.
+In these cases you might want to save name and ID pairs.
+
+For example `SetSceneItemEnabled()` method needs a scene name, a scene item ID and whether enabled or not (true/false) as an input parameter.
+Yes, I also think it is kind of lame (looking at you OBS Project guys), but that is what it is.
+
+You will find more examples at the examples section.
+
+### 👨‍👩‍👧‍👦 Handling groups (not recommended)
+
+Do not use groups. Groups are messy and items are not always retrieved.
+Use nested scenes instead.
+
+If you still want to use groups, use the `GetFullSceneItemList` method to get all scene items.
+Working example at [Toggling any scene items (sources) in one scene (handles groups)](#toggling-any-scene-items-sources-in-one-scene-handles-groups))
+
+Do not use groups.
+
+```
+class MyOBSController extends OBSWebSocket {
+	AfterIdentified() {
+		this.GetFullSceneItemList(this.sceneName)
+	}
+
+	GetFullSceneItemListResponse(data) {
+		For Key, sceneItemData in data.d.responseData.sceneItems
+		{
+			...
+		}
+	}
+}
+```
+
+### 🎭 Scene transition events
+
+When changing scenes it is easier to use `SceneTransitionEnded` event instead of `CurrentProgramSceneChanged`, because the latter one will trigger two changes: with the scene we are changing from and with the new one we are changing to (which you might or might not desire).
+`SceneTransitionEnded` will be triggered only once with the new scene.
+
+### 🙂 Emojis
+
+If you are using emojis (in scene names, input names, or just in general), make sure you save the files with "UTF-8 with BOM" option.
+This can be set even in Windows Notepad.
+You might just have been saved from "Scene not found" error messages.
+
+### ✉ Debugging Websocket messages (optional)
+
+Messages can be intercepted with [WireShark](https://www.wireshark.org).
+
+Set the adapter to "Adapter for loopback traffic capture", set display filter to websocket.
+Use the script and if there is any messages between OBS and your script, it will be listed.
+You can check the message content.
+If the message content is masked, you can unmask it.
+Note that you might need the connection phase too for this to unmask the raw data.
+
+### 💌 Debugging Message data
+
+Highly recommended to use [scite4ahk](https://www.autohotkey.com/scite4ahk/).
+You can easily set breakpoints and check the format of the received data.
+It is a great AHK debugging tool in general.
 
 ## 🧐 Examples
 
 Note that most (not all) of the examples can be done by defining hotkeys in OBS Studio.
 These examples are here just to give you the basic synax of triggers, events and responses.
+They work, but without proper scene setup, they will likely to fail.
 
 ### Toggling scenes and scene items (sources)
 
@@ -217,24 +264,23 @@ These examples are here just to give you the basic synax of triggers, events and
 
 Basically this is the scipt you might want to extend.
 Note that this script __does not handle groups__, and you are encouraged not to use groups (OBSProject recommendation).
-No explanation here, but if you need a deeper knowledge about the mechanism, you might want to check all other scripts below this one.
+(You can still do that though, go to [Toggling any scene items (sources) in one scene (handles groups)](#toggling-any-scene-items-sources-in-one-scene-handles-groups))
+
+No explanation here, but if you need a deeper knowledge about the mechanism, or some simpler scripts, you might want to check all other scripts below this one.
 
 ```
-#NoEnv
-SetBatchLines, -1
-
 #Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends ObsWebSocket {
 
-	state :=
+	state := 0
 
 	AfterIdentified() {
 		this.GetCurrentProgramScene()
 	}
 
 	GetSceneItemListResponse(data) {
-		sceneItemIdsByName := {}
+		sceneItemIdsByName := Map()
 		For Key, sceneItemData in data.d.responseData.sceneItems
 		{
 			sceneItemIdsByName[sceneItemData.sourceName] := sceneItemData.sceneItemId
@@ -258,38 +304,32 @@ class MyOBSController extends ObsWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 
 ; set active scene to SceneA
-Numpad1::
-	obsc.changeScene("SceneA")
-return
+Numpad1::obsc.changeScene("SceneA")
 
 ; set active scene to SceneB and set ItemB to visible
-Numpad2::
+Numpad2:: {
+	global
 	obsc.changeScene("SceneB")
+	Sleep(100) ; wait for scene change
 	obsc.toggleSceneItem("SceneB", "ItemB", true)
-return
+}
 
 ; set active scene to SceneB and set ItemB to hidden
-Numpad3::
+Numpad3:: {
+	global
 	obsc.changeScene("SceneB")
+	Sleep(100) ; wait for scene change
 	obsc.toggleSceneItem("SceneB", "ItemB", false)
-return
-
+}
 ; set ItemC to visible on SceneC, doesn't matter if SceneC is visible or not
-Numpad4::
-	obsc.toggleSceneItem("SceneC", "ItemC", true)
-return
+Numpad4::obsc.toggleSceneItem("SceneC", "ItemC", true)
 
 ; set ItemC to hidden on SceneC, doesn't matter if SceneC is visible or not
-Numpad5::
-	obsc.toggleSceneItem("SceneC", "ItemC", false)
-return
+Numpad5::obsc.toggleSceneItem("SceneC", "ItemC", false)
 ```
-
-Notes for this script:
-While websocket address as "localhost" does not work, using localhost IP address (127.0.0.1) works.
 
 ### Toggle a scene
 
@@ -297,63 +337,34 @@ While websocket address as "localhost" does not work, using localhost IP address
 
 Simplest script to change scenes.
 If you do not want to receive any data, and do not care about any events, you do not need to create a new class.
+For toggling a scene element, check [Toggle a scene element](#toggle-a-scene-element)
 
 ```
-#Include lib/OBSWebSocket.ahk
+#Include lib/ObsWebSocket.ahk
 
-obsws := new OBSWebSocket("ws://127.0.0.1:4455/")
-return
+obsc := OBSWebSocket("ws://127.0.0.1:4455/")
 
-Numpad1::
-obsws.SetCurrentProgramScene("Gaming with camera")
-return
-
-Numpad2::
-obsws.SetCurrentProgramScene("Be right back")
-return
+Numpad1::obsc.SetCurrentProgramScene("SceneA")
+Numpad2::obsc.SetCurrentProgramScene("SceneB")
 ```
 
-### Toggle filter settings
+### Toggling microphone and scene
 
-[example-filter-settings.ahk](example-filter-settings.ahk)
-
-You need to add a source "Desktop" and apply a Color Correction and a Sharpen filter to it, otherwise there will be errors.
-(Note that even though the examples mentioned "watching a pixel for checking health bar", this is not implemented here, as it is not a concern of OBS WebSocket functionality.)
-
-```
-#Include lib/OBSWebSocket.ahk
-
-obsc := new OBSWebSocket("ws://127.0.0.1:4455/")
-
-F12::
-	filterSettings := {"brightness":0.0, "color_add":0, "color_multiply":16777215, "contrast":4.0, "gamma":0.0, "hue_shift":180, "opacity":1.0, "saturation":0.0}
-	obsc.SetSourceFilterSettings("Desktop", "Color Correction", filterSettings)
-
-	filterSettings := {"sharpness":1.0}
-	obsc.SetSourceFilterSettings("Desktop", "Sharpen", filterSettings)
-	return
-```
-
-
-### Toggling microphone and scene with AHK hotkey
-
-This script will allow you to toggle between two scenes and toggle the microphone at the same time by pressing F12.
-
-Again, no need for extending the class, if a simple eventless and responseless mechanism is required.
+This script will allow you to toggle between two scenes (named "Gaming - muted" and "Gaming") and toggle the microphone (named "Mic/Aux") at the same time by pressing F12.
 
 ```
 #Include lib/OBSWebSocket.ahk
 
 muted := false
-obsws := new OBSWebSocket("ws://127.0.0.1:4455/")
+obsws := OBSWebSocket("ws://127.0.0.1:4455/")
 
-F12::
+F12:: {
+	global
 	muted := !muted
 	obsws.SetInputMute("Mic/Aux", obsws.Boolean(muted))
 	obsws.SetCurrentProgramScene(muted ? "Gaming - muted" : "Gaming")
-return
+}
 ```
-
 
 ### Toggle a scene element
 
@@ -365,16 +376,13 @@ To read the ID, first we have to find it by name on a given scene.
 In the example below we will change the visibility of the "Webcamera" scene item under "Gaming" scene. 
 
 ```
-#NoEnv
-SetBatchLines, -1
-
-#Include lib/OBSWebSocket.ahk
+#Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends OBSWebSocket {
 
 	isVisible := true
-	sceneName := "Gaming"
-	sceneItemName := "Webcamera"
+	sceneName := "SceneA"
+	sceneItemName := "ItemAC"
 	sceneItemId := -1
 
 	AfterIdentified() {
@@ -389,14 +397,15 @@ class MyOBSController extends OBSWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 
-F12::
+F12::{
+	global
 	if (obsc.sceneItemId = -1)
 		return
 	obsc.isVisible := !obsc.isVisible
 	obsc.SetSceneItemEnabled(obsc.sceneName, obsc.sceneItemId, obsc.Boolean(obsc.isVisible))
-	return
+}
 ```
 
 ### Toggling microphone with AHK hotkey or in OBS toggles scene 
@@ -406,25 +415,26 @@ F12::
 This script will allow you to change the scene when the microphone is muted with F12 (defined in this script), by clicking on the speaker icon in OBS, or by using an OBS hotkey.
 
 ```
-#Include lib/OBSWebSocket.ahk
+#Include lib/ObsWebSocket.ahk
+
+; You will need two scenes "Gaming - muted" and "Gaming"
+; There should be a "Mic/Aux" input device in the Audio Mixer
 
 class MyOBSController extends OBSWebSocket {
 	muted := false
 
 	InputMuteStateChangedEvent(data) {
 		; check if the mute change is about the microphone
-		if (data.d.eventData.inputName = 'Mic/Aux') {
+		if (data.d.eventData.inputName = "Mic/Aux") {
 			this.muted := data.d.eventData.inputMuted
 			this.SetCurrentProgramScene(this.muted ? "Gaming - muted" : "Gaming")
 		}
 	}
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Input)
+obsc := MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs)
 
-F12::
-	obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
-	return
+F12::obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
 ```
 
 In this case `SetInputMute()` will trigger OBS to mute/unmute, and OBS will send an `InputMuteStateChanged` event, which is handled by `EventInputMuteStateChanged()`.
@@ -440,7 +450,10 @@ The difference between this and the previous one is that even if the scene is ch
 So basically the microphone muted state and the scene visibility will be "linked".
 
 ```
-#Include lib/OBSWebSocket.ahk
+#Include lib/ObsWebSocket.ahk
+
+; You will need two scenes "Be right back" and "Gaming"
+; There should be a "Mic/Aux" input device in the Audio Mixer
 
 class MyOBSController extends OBSWebSocket {
 
@@ -466,22 +479,22 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)
+obsc := MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)
 
-F12::
-	obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
-return
+F12::obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
 ```
 
-The most important thing to notice here is that (after pressing F12) `SetInputMute()` triggers `EventInputMuteStateChanged()` which calls `SetCurrentProgramScene()` which triggers `EventCurrentProgramSceneChanged()` which calls `EventInputMuteStateChanged()` which... do you see the pattern here?
+The most important thing to notice here is that (after pressing F12) `SetInputMute()` triggers `InputMuteStateChangedEvent()` which calls `SetCurrentProgramScene()` which triggers `CurrentProgramSceneChangedEvent()` which calls `InputMuteStateChangedEvent()` which... do you see the pattern here?
+
 It is an infinite loop.
-Also, if the scene is changed, the infinite loop starts with `EventCurrentProgramSceneChanged()`, but the effect is the same.
+
+Also, if the scene is changed, the infinite loop starts with `CurrentProgramSceneChangedEvent()`, but the effect is the same.
 The runtime of infinite loops is quite long; I have not measured it yet, but it is close to the end of our known universe, or even worse, the script will freeze, so let's not do that.
 
 Here we skip the infinite loop by checking the muted state and the active scene.
 We could even get the active scene and the muted state of the microphone and check all of them at once, but I think it is a good practice not to trust the saved states of AHK variables, but to rely on the real states coming from OBS Studio.
+
 It is possible to write a more effective code than this, I just want to keep this here to for clarity (or for complexity?); I advice to run this code in your head, just go get familiar with requests and effect of events.
-The code below runs without infinite loop.
 
 ### Toggling any scene items (sources) in one scene (handles groups)
 
@@ -499,15 +512,12 @@ Even if the scene items are under groups, this script can handle them. However, 
 Note that there is no mechanism implemented here to handle changes coming from OBS.
 
 ```
-#NoEnv
-SetBatchLines, -1
-
 #Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends ObsWebSocket {
 
 	sceneName := "Scene"
-	sceneItemsByName := {}
+	sceneItemsByName := Map()
 
 	AfterIdentified() {
 		this.GetFullSceneItemList(this.sceneName)
@@ -521,7 +531,7 @@ class MyOBSController extends ObsWebSocket {
 	}
 
 	toggleSceneItem(sceneItem) {
-		if (!this.sceneItemsByName[sceneItem]) {
+		if (!this.sceneItemsByName.Has(sceneItem)) {
 			return
 		}
 		this.sceneItemsByName[sceneItem].sceneItemEnabled := !this.sceneItemsByName[sceneItem].sceneItemEnabled
@@ -530,12 +540,33 @@ class MyOBSController extends ObsWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 
 F9::obsc.toggleSceneItem("Video Capture Device")
 F10::obsc.toggleSceneItem("Audio Input Capture")
 F11::obsc.toggleSceneItem("Image")
 F12::obsc.toggleSceneItem("Display Capture")
+```
+
+### Toggle filter settings
+
+[example-filter-settings.ahk](example-filter-settings.ahk)
+
+When changing properties of effects, such as filters, make sure you added the effect you want to modify.
+
+```
+#Include lib/ObsWebSocket.ahk
+
+obsc := OBSWebSocket("ws://127.0.0.1:4455/")
+
+F12:: {
+	; you need to have a source "Desktop" and a Color Correction and a Sharpen filter applied already
+	filterSettings := {brightness: 0.0, color_add: 0, color_multiply: 16777215, contrast: 4.0, gamma: 0.0, hue_shift: 180, opacity: 1.0, saturation: 0.0}
+	obsc.SetSourceFilterSettings("Desktop", "Color Correction", filterSettings)
+
+	filterSettings := {sharpness: 1.0}
+	obsc.SetSourceFilterSettings("Desktop", "Sharpen", filterSettings)
+}
 ```
 
 ### Change text
@@ -546,9 +577,6 @@ You have to have a "TextItem" on your active scene for this to work.
 Of course it can be renamed to anything you like, but adjust the code for the change.
 
 ```
-#NoEnv
-SetBatchLines, -1
-
 #Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends ObsWebSocket {
@@ -559,31 +587,138 @@ class MyOBSController extends ObsWebSocket {
 	}
 
 	SetScore(scoreResult) {
-		; because 0 is not a visible string in AHK, we change it to text
-		if (!scoreResult) {
-			scoreResult := "0"
-		}
-		this.SetInputSettings("TextItem", {text: "Score: " . scoreResult})
+		; because 0 should be shown as a text, and number 0 is not a visible string in AHK,
+		; we need to change the number to string
+		this.SetInputSettings("TextItem", {text: "Score: " . String(scoreResult)})
 	}
 
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 
-NumpadAdd::
+NumpadAdd:: {
+	global
 	obsc.score := obsc.score + 1
 	obsc.SetScore(obsc.score)
-return
+}
 
-NumpadSub::
+NumpadSub:: {
+	global
 	obsc.score := obsc.score - 1
 	obsc.SetScore(obsc.score)
-return
+}
 ```
 
+### Start a scheduled recording
+
+example-scheduled-recording.ahk
+
+```
+#Include "lib/ObsWebSocket.ahk"
+
+class MyOBSController extends ObsWebSocket {
+
+	AfterIdentified() {
+		this.timeToStart := 201500 ; 20:15:00, which is 8:15:00pm. If you want the script to start at 7:00:00am, change it to 70000
+		this.timeToStop :=  this.timeToStart + 5 ; will record 5 seconds
+		; timers are funky in classes, see https://www.autohotkey.com/docs/v2/lib/SetTimer.htm#ExampleClass
+		this.startTimer := ObjBindMethod(this,"ScheduledStart")
+		this.stopTimer := ObjBindMethod(this,"ScheduledStop")
+		SetTimer(this.startTimer, 500)
+	}
+
+	StopRecordResponse(data) {
+		outputPath := data.d.responseData.outputPath
+		MsgBox("Recorded to " outputPath)
+	}
+
+	ScheduledStart() {
+		timeNow := FormatTime(, "HHmmss")
+		If (this.timeToStop <= timeNow) {
+			SetTimer(this.startTimer, 0)
+			MsgBox("Stop time already passed")
+			this.Disconnect()
+			ExitApp
+		}
+		If (timeNow >= this.timeToStart && timeNow <= this.timeToStart + 2) {
+			SetTimer(this.startTimer,0)
+			this.StartRecord()
+			SetTimer(this.stopTimer, 500)
+		}
+	}
+
+	ScheduledStop() {
+		timeNow := FormatTime(, "HHmmss")
+		If (timeNow >= this.timeToStop && timeNow <= this.timeToStop + 2) {
+			this.StopRecord()
+			SetTimer(this.stopTimer,0)
+			this.Disconnect()
+			ExitApp
+		}
+	}
+
+}
+
+obsc := MyOBSController("ws://127.0.0.1:4455/")
+
+; this is just for keeping the script alive
+F24:: x := 1
+```
+
+### Get recording, virtual camera and streaming statuses
+
+[example-get-statuses.ahk](example-get-statuses.ahk)
+
+After connection is established, it shows all (selected) statuses.
+
+```
+#Include lib/ObsWebSocket.ahk
+
+class MyOBSController extends ObsWebSocket {
+
+	AfterIdentified() {
+		this.ReadAllStatuses()
+	}
+
+	GetVirtualCamStatusResponse(data) {
+		this.virtualCamActive := data.d.responseData.outputActive
+		this.ShowEveryStatus()
+	}
+
+	GetRecordStatusResponse(data) {
+		this.recordActive := data.d.responseData.outputActive
+		this.ShowEveryStatus()
+	}
+
+	GetStreamStatusResponse(data) {
+		this.streamActive := data.d.responseData.outputActive
+		this.ShowEveryStatus()
+	}
+
+	ReadAllStatuses() {
+		this.virtualCamActive := -1
+		this.streamActive := -1
+		this.recordActive := -1		
+		this.GetVirtualCamStatus()
+		this.GetRecordStatus()
+		this.GetStreamStatus()
+	}
+
+	ShowEveryStatus() {
+		if (this.virtualCamActive > -1 && this.streamActive > -1 && this.recordActive > -1) {
+			MsgBox("virtualCam: " . this.virtualCamActive . ", stream: " . this.streamActive . ", record: " . this.recordActive)
+		}
+	}
+
+}
+
+obsc := MyOBSController("ws://127.0.0.1:4455/")
+
+F12::obsc.ReadAllStatuses()
+```
 ### Change Virtual Camera settings
 
-It seems that OBSWebSocket (which is built in OBS) does not support this yet.
+It seems that OBSWebSocket (not this script, but which is built in OBS) does not support this yet.
 
 However, there are some [workarounds](https://github.com/5ony/OBSWebSocketAHK/issues/4), the best one is as follows.
 
@@ -593,23 +728,24 @@ After you make a new Scene collection, adjust the Virtual Camera settings to you
 To change to a new Scene collection, you have to stop the virtual camera settings first, activate the new scene collection, wait a bit so the new scene is loaded, then start the virtual camera like so:
 
 ```
-#NoEnv
-SetBatchLines, -1
 #Include lib/ObsWebSocket.ahk
-class MyOBSController extends ObsWebSocket {}
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
 
-F1::
-	obsc.StopVirtualCam()
-	obsc.SetCurrentSceneCollection("Gaming scene collection")
-	Sleep, 1000
-	obsc.StartVirtualCam()
-return
+obsc := ObsWebSocket("ws://127.0.0.1:4455/")
 
-F2::
+; If the virtual camera is off and StopVirtualCam() is called, an error will be thrown (but the script will continue)
+
+F1::{
+	global
 	obsc.StopVirtualCam()
-	obsc.SetCurrentSceneCollection("Facecam scene collection")
-	Sleep, 1000
+	obsc.SetCurrentSceneCollection("Untitled")
+	Sleep(1000)
 	obsc.StartVirtualCam()
-return
+}
+F2::{
+	global
+	obsc.StopVirtualCam()
+	obsc.SetCurrentSceneCollection("handcrafted bar-sony")
+	Sleep(1000)
+	obsc.StartVirtualCam()
+}
 ```

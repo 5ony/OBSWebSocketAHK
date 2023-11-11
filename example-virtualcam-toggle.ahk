@@ -1,13 +1,11 @@
-#NoEnv
-SetBatchLines, -1
-
+#Requires AutoHotkey >=2.0-
 #Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends ObsWebSocket {
 	virtualCamActive := 0
 
 	AfterIdentified() {
-		obsc.GetVirtualCamStatus()
+		this.GetVirtualCamStatus()
 	}
 
 	GetVirtualCamStatusResponse(data) {
@@ -19,8 +17,6 @@ class MyOBSController extends ObsWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/", "", MyOBSController.EventSubscription.All)
-
-Numpad1::
-	obsc.toggleVirtualCam(!outputActive)
-return
+outputActive := 0
+obsc := MyOBSController("ws://127.0.0.1:4455/", "", MyOBSController.EventSubscription.All)
+Numpad1::obsc.toggleVirtualCam(!outputActive)

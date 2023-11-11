@@ -1,12 +1,10 @@
-﻿#NoEnv
-SetBatchLines, -1
-
+﻿#Requires AutoHotkey >=2.0-
 #Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends ObsWebSocket {
 
 	sceneName := "Scene"
-	sceneItemsByName := {}
+	sceneItemsByName := Map()
 
 	AfterIdentified() {
 		this.GetFullSceneItemList(this.sceneName)
@@ -20,7 +18,7 @@ class MyOBSController extends ObsWebSocket {
 	}
 
 	toggleSceneItem(sceneItem) {
-		if (!this.sceneItemsByName[sceneItem]) {
+		if (!this.sceneItemsByName.Has(sceneItem)) {
 			return
 		}
 		this.sceneItemsByName[sceneItem].sceneItemEnabled := !this.sceneItemsByName[sceneItem].sceneItemEnabled
@@ -29,7 +27,7 @@ class MyOBSController extends ObsWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 
 F9::obsc.toggleSceneItem("Video Capture Device")
 F10::obsc.toggleSceneItem("Audio Input Capture")

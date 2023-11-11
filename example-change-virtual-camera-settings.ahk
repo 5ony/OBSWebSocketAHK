@@ -1,21 +1,21 @@
-#NoEnv
-SetBatchLines, -1
-
+#Requires AutoHotkey >=2.0-
 #Include lib/ObsWebSocket.ahk
 
-class MyOBSController extends ObsWebSocket {}
+obsc := ObsWebSocket("ws://127.0.0.1:4455/")
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+; If the virtual camera is off and StopVirtualCam() is called, an error will be thrown (but the script will continue)
 
-F1::
+F1::{
+	global
 	obsc.StopVirtualCam()
 	obsc.SetCurrentSceneCollection("Untitled")
-	Sleep, 1000
+	Sleep(1000)
 	obsc.StartVirtualCam()
-return
-F2::
+}
+F2::{
+	global
 	obsc.StopVirtualCam()
 	obsc.SetCurrentSceneCollection("handcrafted bar-sony")
-	Sleep, 1000
+	Sleep(1000)
 	obsc.StartVirtualCam()
-return
+}

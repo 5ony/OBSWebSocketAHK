@@ -6,7 +6,6 @@ class MyOBSController extends ObsWebSocket {
 	AfterIdentified() {
 		this.timeToStart := 201500 ; 20:15:00, which is 8:15:00pm. If you want the script to start at 7:00:00am, change it to 70000
 		this.timeToStop :=  this.timeToStart + 5 ; will record 5 seconds
-		; timers are funky in classes, see https://www.autohotkey.com/docs/v2/lib/SetTimer.htm#ExampleClass
 		this.startTimer := ObjBindMethod(this,"ScheduledStart")
 		this.stopTimer := ObjBindMethod(this,"ScheduledStop")
 		SetTimer(this.startTimer, 500)
@@ -47,4 +46,4 @@ class MyOBSController extends ObsWebSocket {
 obsc := MyOBSController("ws://127.0.0.1:4455/")
 
 ; this is just for keeping the script alive
-F24:: x := 1
+F12:: x := 1

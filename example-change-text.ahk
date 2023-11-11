@@ -1,6 +1,4 @@
-﻿#NoEnv
-SetBatchLines, -1
-
+﻿#Requires AutoHotkey >=2.0-
 #Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends ObsWebSocket {
@@ -11,23 +9,23 @@ class MyOBSController extends ObsWebSocket {
 	}
 
 	SetScore(scoreResult) {
-		; because 0 is not a visible string in AHK, we change it to text
-		if (!scoreResult) {
-			scoreResult := "0"
-		}
-		this.SetInputSettings("TextItem", {text: "Score: " . scoreResult})
+		; because 0 should be shown as a text, and number 0 is not a visible string in AHK,
+		; we need to change the number to string
+		this.SetInputSettings("TextItem", {text: "Score: " . String(scoreResult)})
 	}
 
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 
-NumpadAdd::
+NumpadAdd:: {
+	global
 	obsc.score := obsc.score + 1
 	obsc.SetScore(obsc.score)
-return
+}
 
-NumpadSub::
+NumpadSub:: {
+	global
 	obsc.score := obsc.score - 1
 	obsc.SetScore(obsc.score)
-return
+}

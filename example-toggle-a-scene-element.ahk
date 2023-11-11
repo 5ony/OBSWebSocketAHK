@@ -1,13 +1,11 @@
-﻿#NoEnv
-SetBatchLines, -1
-
-#Include lib/OBSWebSocket.ahk
+﻿#Requires AutoHotkey >=2.0-
+#Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends OBSWebSocket {
 
 	isVisible := true
-	sceneName := "Gaming"
-	sceneItemName := "Webcamera"
+	sceneName := "SceneA"
+	sceneItemName := "ItemAC"
 	sceneItemId := -1
 
 	AfterIdentified() {
@@ -22,11 +20,12 @@ class MyOBSController extends OBSWebSocket {
 
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 
-F12::
+F12::{
+	global
 	if (obsc.sceneItemId = -1)
 		return
 	obsc.isVisible := !obsc.isVisible
 	obsc.SetSceneItemEnabled(obsc.sceneName, obsc.sceneItemId, obsc.Boolean(obsc.isVisible))
-	return
+}
