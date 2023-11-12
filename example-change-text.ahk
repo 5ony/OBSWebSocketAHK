@@ -14,18 +14,14 @@ class MyOBSController extends ObsWebSocket {
 		this.SetInputSettings("TextItem", {text: "Score: " . String(scoreResult)})
 	}
 
+	changeScore(changeBy) {
+		obsc.score := obsc.score + changeBy
+		obsc.SetScore(obsc.score)
+	}
+
 }
 
 obsc := MyOBSController("ws://127.0.0.1:4455/")
 
-NumpadAdd:: {
-	global
-	obsc.score := obsc.score + 1
-	obsc.SetScore(obsc.score)
-}
-
-NumpadSub:: {
-	global
-	obsc.score := obsc.score - 1
-	obsc.SetScore(obsc.score)
-}
+NumpadAdd::obsc.changeScore(1)
+NumpadSub::obsc.changeScore(-1)

@@ -18,14 +18,15 @@ class MyOBSController extends OBSWebSocket {
 		this.sceneItemId := data.d.responseData.sceneItemId
 	}
 
+	toggleSceneItem() {
+		if (this.sceneItemId = -1)
+			return
+		this.isVisible := !this.isVisible
+		this.SetSceneItemEnabled(this.sceneName, this.sceneItemId, this.Boolean(this.isVisible))
+	}
+
 }
 
 obsc := MyOBSController("ws://127.0.0.1:4455/")
 
-F12::{
-	global
-	if (obsc.sceneItemId = -1)
-		return
-	obsc.isVisible := !obsc.isVisible
-	obsc.SetSceneItemEnabled(obsc.sceneName, obsc.sceneItemId, obsc.Boolean(obsc.isVisible))
-}
+F12::obsc.toggleSceneItem()

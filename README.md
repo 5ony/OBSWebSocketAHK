@@ -1,14 +1,12 @@
 # OBS WebSocket for AutoHotKey v2.0+
 
-Looking for v1.1? [Click here](https://github.com/5ony/OBSWebSocketAHK/tree/1.1.1)
-
 Handling OBS Studio via WebSocket with AutoHotKey.
+
+Looking for v1.1? [Click here](https://github.com/5ony/OBSWebSocketAHK/tree/1.1.1)
 
 This AutoHotKey library handles OBS websocket version: 5.0.1
 
 Basic functionality tested with OBS Studio 29.1.3 (64 bit)
-
-Get to the point 🡺 check the first script under [Examples](#-examples)
 
 ## 🤔 Why would you want to use this script?
 
@@ -84,9 +82,8 @@ obsc := OBSWebSocket("ws://127.0.0.1:4455/")
 ; obsc := MyOBSController("ws://127.0.0.1:4455/", "YourPasswordHere")
 
 ```
-- If you are using on your local computer, you can use address "127.0.0.1:4455" ("localhost:4455" is not enough). Change the port if necessary.
+- If you are using both AHK and OBS on your local computer, you can use address "127.0.0.1:4455" ("localhost:4455" is not enough). Change the port if necessary.
 - You can run your script and the OBS's Connected WebSocket Sessions list should show a new connection.
-
 - For listening to OBS Studio responses and events you might want to create your own class of OBSWebSocket:
 
 ```
@@ -356,13 +353,13 @@ This script will allow you to toggle between two scenes (named "Gaming - muted" 
 #Include lib/OBSWebSocket.ahk
 
 muted := false
-obsws := OBSWebSocket("ws://127.0.0.1:4455/")
+obsc := OBSWebSocket("ws://127.0.0.1:4455/")
 
 F12:: {
 	global
 	muted := !muted
-	obsws.SetInputMute("Mic/Aux", obsws.Boolean(muted))
-	obsws.SetCurrentProgramScene(muted ? "Gaming - muted" : "Gaming")
+	obsc.SetInputMute("Mic/Aux", obsc.Boolean(muted))
+	obsc.SetCurrentProgramScene(muted ? "Gaming - muted" : "Gaming")
 }
 ```
 
@@ -373,9 +370,10 @@ F12:: {
 Scene items ("Sources" in OBS Studio) can be manipulated with a valid ID, and not by their names.
 To read the ID, first we have to find it by name on a given scene.
 
-In the example below we will change the visibility of the "Webcamera" scene item under "Gaming" scene. 
+In the example below we will change the visibility of the "ItemAC" scene item under "SceneA" scene.
 
 ```
+#Requires AutoHotkey >=2.0-
 #Include lib/ObsWebSocket.ahk
 
 class MyOBSController extends OBSWebSocket {
@@ -395,17 +393,18 @@ class MyOBSController extends OBSWebSocket {
 		this.sceneItemId := data.d.responseData.sceneItemId
 	}
 
+	toggleSceneItem() {
+		if (this.sceneItemId = -1)
+			return
+		this.isVisible := !this.isVisible
+		this.SetSceneItemEnabled(this.sceneName, this.sceneItemId, this.Boolean(this.isVisible))
+	}
+
 }
 
 obsc := MyOBSController("ws://127.0.0.1:4455/")
 
-F12::{
-	global
-	if (obsc.sceneItemId = -1)
-		return
-	obsc.isVisible := !obsc.isVisible
-	obsc.SetSceneItemEnabled(obsc.sceneName, obsc.sceneItemId, obsc.Boolean(obsc.isVisible))
-}
+F12::obsc.toggleSceneItem()
 ```
 
 ### Toggling microphone with AHK hotkey or in OBS toggles scene 
@@ -552,7 +551,7 @@ F12::obsc.toggleSceneItem("Display Capture")
 
 [example-filter-settings.ahk](example-filter-settings.ahk)
 
-When changing properties of effects, such as filters, make sure you added the effect you want to modify.
+When changing properties of effects, such as filters, make sure you have added the effect to the scene item you want to modify.
 
 ```
 #Include lib/ObsWebSocket.ahk
@@ -573,7 +572,7 @@ F12:: {
 
 [example-change-text.ahk](example-change-text.ahk)
 
-You have to have a "TextItem" on your active scene for this to work.
+You have to have a Text (GDI+) scene item renamed to "TextItem" on your active scene for this to work.
 Of course it can be renamed to anything you like, but adjust the code for the change.
 
 ```
@@ -592,21 +591,17 @@ class MyOBSController extends ObsWebSocket {
 		this.SetInputSettings("TextItem", {text: "Score: " . String(scoreResult)})
 	}
 
+	changeScore(changeBy) {
+		obsc.score := obsc.score + changeBy
+		obsc.SetScore(obsc.score)
+	}
+
 }
 
 obsc := MyOBSController("ws://127.0.0.1:4455/")
 
-NumpadAdd:: {
-	global
-	obsc.score := obsc.score + 1
-	obsc.SetScore(obsc.score)
-}
-
-NumpadSub:: {
-	global
-	obsc.score := obsc.score - 1
-	obsc.SetScore(obsc.score)
-}
+NumpadAdd::obsc.changeScore(1)
+NumpadSub::obsc.changeScore(-1)
 ```
 
 ### Start a scheduled recording
