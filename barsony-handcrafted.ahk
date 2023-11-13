@@ -283,9 +283,9 @@ class MyOBSController extends ObsWebSocket {
 
 showGifMeme(sceneItemPreName, sceneItemCount) {
 	global
-	seq := seq + 1
 	sceneItemName := sceneItemPreName . (Mod(seq, sceneItemCount) + 1) . ".gif"
 	obsc.showSceneDelayed(sceneNames.memeSceneName, sceneItemName, 4000)
+	seq := seq + 1
 }
 
 showNumpadHelper() {
@@ -317,14 +317,17 @@ NumpadDiv::obsc.SetInputMute("Audio - Game", obsc.Boolean(true))
 ; kill
 Numpad1::{
 	global
-	seq := seq + 1
-	if (Mod(seq, 3) = 0)
+	mod_ := Mod(seq, 13+3)
+	if (mod_ = 0) {
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - yeahboi", 2000)
-	if (Mod(seq, 3) = 1)
+	} else if (mod_ = 1) {
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - nice", 2500)
-	if (Mod(seq, 3) = 2)
+	} else if (mod_ = 2) {
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - kaboom-kaboom", 3000)
-	return
+	} else {
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "win_" . (mod_-2) . ".gif", 4000)
+	}
+	seq := seq + 1
 }
 ; 👊 execute / hit
 Numpad2::showGifMeme("hit_", 7)
@@ -335,22 +338,21 @@ Numpad3::showGifMeme("confused_", 19)
 ; 😨 panic
 Numpad4::{
 	global
-	seq := seq + 1
-	if (!Mod(seq, 8)) {
+	mod_ := Mod(seq, 4)
+	if (!mod) {
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - hit markers", 3500)
 	} else {
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "panic_" . (Mod(seq, 3) + 1) . ".gif", 4000)
+		obsc.showSceneDelayed(sceneNames.memeSceneName, "panic_" . (mod_ + 1) . ".gif", 4000)
 	}
-	return
+	seq := seq + 1
 }
 
 ; 🏃‍ running away
-Numpad5::showGifMeme("running_away_", 4)
+Numpad5::showGifMeme("running_away_", 11)
 
 ; 💀 dead
 Numpad6::{
 	global
-	seq := seq + 1
 	if (Mod(seq, 4) = 0)
 		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - to be continued", 10000)
 	if (Mod(seq, 4) = 1)
@@ -362,10 +364,10 @@ Numpad6::{
 		Sleep(4000)
 		obsc.SetCurrentProgramScene(sceneNames.gamingSceneName)
 	}
-	return
+	seq := seq + 1
 }
 ; 🥇 golden loot
-Numpad8::showGifMeme("gold_loot_", 7)
+Numpad8::showGifMeme("gold_loot_", 15)
 
 ; 👜 carry
 Numpad9::showGifMeme("carry_", 7)
