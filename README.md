@@ -131,11 +131,11 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 
-obsc := new MyOBSController("ws://127.0.0.1:4455/")
+obsc := MyOBSController("ws://127.0.0.1:4455/")
 ```
 Note that:
 - Every request and response are asynchronous, which means responses will arrive, but not in a timely manner, not even in order.
-- `AfterIdentified()` method is the one where your OBS script can start. OBS methods cannot be called instantly after creating a new OBSWebSocket instance, because the connection is already asynchronous, and it might be still under negotiation.  When the connection is successfully made, `AfterIdentified()` method will be called (if it is defined in your script).
+- `AfterIdentified()` method is the one where your OBS script can start. OBS methods cannot be called instantly after creating a new OBSWebSocket instance, because the connection is already asynchronous, and it might be still under negotiation. When the connection is successfully made, `AfterIdentified()` method will be called (if it is defined in your script).
 - Request methods do not return anything in itself, a callback has to be defined. For request `GetVersion` a callback should be called `GetVersionResponse`, which should handle the response data through an input parameter.
 
 The received data contains the full response from OBS in AutoHotKey object format.
@@ -166,6 +166,7 @@ It is possible to subscribe to events coming from OBS at initialization. Check `
 By default, no event set to keep the unnecessary conversation between OBS and AHK on a minimum.
 
 To subscibe to events, list them with a bitwise OR at the class initialization:
+
 `obsc := MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)`
 
 Note the bitwise `|`, which is not a logical decision `||`
