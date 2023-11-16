@@ -135,7 +135,7 @@ class OBSWebSocket {
 		. "function addToBin(pos, byte) { bin[pos]=byte; }"
 		. "function sendBin() { ws.send(ab); }"
 
-		this.document.body.appendChild(Script)		
+		this.document.body.appendChild(Script)
 	}
 
 	__CallFunction(functionName, arg:="") {
@@ -413,7 +413,7 @@ class OBSWebSocket {
 		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
 	SaveSourceScreenshot(sourceName, imageFormat, imageFilePath, imageWidth := 0, imageHeight := 0, imageCompressionQuality := 0, requestId := 0) {
-		data := {sourceName: sourceName, imageFormat: imageFormat}
+		data := {sourceName: sourceName, imageFormat: imageFormat, imageFilePath: imageFilePath}
 		if (imageWidth) {
 			data.imageWidth := imageWidth
 		}
@@ -423,7 +423,7 @@ class OBSWebSocket {
 		if (imageCompressionQuality) {
 			data.imageCompressionQuality := imageCompressionQuality
 		}
-		this.SendRequestToObs(A_ThisFunc, requestId)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
 	GetSceneList(requestId := 0) {
 		this.SendRequestToObs(A_ThisFunc, requestId)
