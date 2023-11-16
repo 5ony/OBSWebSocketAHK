@@ -2,7 +2,7 @@
  * Lib: OBSWebSocket.ahk
  *     OBS Studio WebScocket library for AutoHotkey
  * Version:
- *     v1.1.1 [updated 2023-11-10 (YYYY-MM-DD)]
+ *     v1.1.1 [updated 2023-11-16 (YYYY-MM-DD)]
  * Requirements:
  *     AutoHotkey v1.1+
  *     WebSocket.ahk - https://github.com/G33kDude/WebSocket.ahk
@@ -319,7 +319,7 @@ class OBSWebSocket extends WebSocket
 		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
 	SaveSourceScreenshot(sourceName, imageFormat, imageFilePath, imageWidth := 0, imageHeight := 0, imageCompressionQuality := 0, requestId := 0) {
-		data := {sourceName: sourceName, imageFormat: imageFormat}
+		data := {sourceName: sourceName, imageFormat: imageFormat, imageFilePath: imageFilePath}
 		if (imageWidth) {
 			data.imageWidth := imageWidth
 		}
@@ -329,7 +329,7 @@ class OBSWebSocket extends WebSocket
 		if (imageCompressionQuality) {
 			data.imageCompressionQuality := imageCompressionQuality
 		}
-		this.SendRequestToObs(A_ThisFunc, requestId)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
 	GetSceneList(requestId := 0) {
 		this.SendRequestToObs(A_ThisFunc, requestId)

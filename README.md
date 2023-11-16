@@ -613,3 +613,9 @@ F2::
 	obsc.StartVirtualCam()
 return
 ```
+
+### Taking screenshots
+
+[example-single-screenshot.ahk](example-single-screenshot.ahk)
+
+[example-always-new-screenshot.ahk](example-always-new-screenshot.ahk)
