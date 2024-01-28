@@ -796,7 +796,7 @@ class OBSWebSocket {
 		}
 		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
-	OpenSourceProjector(sourceName, monitorIndex := -2, projectorGeometry := 0, requestId := 0) {
+	OpenSourceProjector(sourceName, monitorIndex := -2, projectorGeometry := "", requestId := 0) {
 		data := {sourceName: sourceName}
 		if (monitorIndex > -2) {
 			data.monitorIndex := monitorIndex
@@ -804,7 +804,7 @@ class OBSWebSocket {
 		if (projectorGeometry) {
 			data.projectorGeometry := projectorGeometry
 		}
-		this.SendRequestToObs(A_ThisFunc, requestId)
+		this.SendRequestToObs(A_ThisFunc, requestId, data)
 	}
 
 	; Extra implementations which are not in OBSProject
