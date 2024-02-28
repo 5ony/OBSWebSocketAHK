@@ -35,15 +35,15 @@
 #Requires AutoHotkey >=2.0-
 #Include lib/OBSWebSocket.ahk
 
-showNumpadHelper()
-
 sceneNames := {
-	gamingSceneName: "🎮📷 Gaming with cam [PgDn]",
-	 memeSceneName : "Effect - Gaming - meme",
+	         gaming: "🎮📷 Gaming with cam",
+	 gamingChatting: "🎮📷 Gaming with cam - chatting",
+	 	gamingNoCam: "🎮 Gaming (no cam)",
+			  meme : "Effect - Gaming - meme",
 	          empty: "Empty",
-	       starting: "▶ Stream start - [F11]",
+	       starting: "▶ Stream start",
 	         ending: "⏹ Stream end",
-	       breaking: "⏸ Gaming szünet [End]"
+	       breaking: "⏸ Gaming szünet"
 }
 
 class MyOBSController extends ObsWebSocket {
@@ -265,17 +265,17 @@ class MyOBSController extends ObsWebSocket {
 	}
 
 	streamingStart() {
-		this.SetCurrentProgramScene("Empty")
+		this.SetCurrentProgramScene(sceneNames.empty)
 		Sleep(1000)
 		this.StartStream()
 		Sleep(2000)
-		this.SetCurrentProgramScene("▶ Stream start - [F11]")
+		this.SetCurrentProgramScene(sceneNames.starting)
 		Sleep(96000) ; 1:35
-		this.SetCurrentProgramScene("🎮📷 Gaming with cam [PgDn]")
+		this.SetCurrentProgramScene(sceneNames.gamingChatting)
 	}
 
 	streamingEnd() {
-		this.SetCurrentProgramScene("⏹ Stream end")
+		this.SetCurrentProgramScene(sceneNames.ending)
 		Sleep(30000) ; 0:30
 		this.StopStream()
 	}
@@ -284,14 +284,8 @@ class MyOBSController extends ObsWebSocket {
 showGifMeme(sceneItemPreName, sceneItemCount) {
 	global
 	sceneItemName := sceneItemPreName . (Mod(seq, sceneItemCount) + 1) . ".gif"
-	obsc.showSceneDelayed(sceneNames.memeSceneName, sceneItemName, 4000)
+	obsc.showSceneDelayed(sceneNames.meme, sceneItemName, 4000)
 	seq := seq + 1
-}
-
-showNumpadHelper() {
-	Run("E:\Munka\obs-websocket-ahk-dev\barsony-handcrafted-keys.jpg")
-	WinWaitActive("ahk_exe i_view64.exe")
-	WinMove(-827, 146, 221, 412)
 }
 
 events := MyOBSController.EventSubscription.Config | MyOBSController.EventSubscription.Scenes | MyOBSController.EventSubscription.SceneItems | MyOBSController.EventSubscription.InputActiveStateChanged | MyOBSController.EventSubscription.InputShowStateChanged | MyOBSController.EventSubscription.Inputs
@@ -303,6 +297,18 @@ seq := 0
 ; changing scenes
 #Insert::obsc.streamingStart()
 #Delete::obsc.streamingEnd()
+
+#Numpad1::obsc.changeScene(sceneNames.gamingChatting)
+#Numpad2::obsc.changeScene(sceneNames.gaming)
+#Numpad3::obsc.changeScene(sceneNames.breaking)
+
+currentSceneCapture := 0
+#PgDn:: {
+	global
+	currentSceneCapture := !currentSceneCapture
+	obsc.toggleSceneItem(sceneNames.gamingNoCam, "Game Capture", currentSceneCapture)
+	obsc.toggleSceneItem(sceneNames.gamingNoCam, "Display Capture", !currentSceneCapture)
+}
 
 ; muting audio inputs
 +NumpadAdd::obsc.SetInputMute("🎤Mikrofon", obsc.Boolean(false))
@@ -319,13 +325,13 @@ Numpad1::{
 	global
 	mod_ := Mod(seq, 13+3)
 	if (mod_ = 0) {
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - yeahboi", 2000)
+		obsc.showSceneDelayed(sceneNames.meme, "meme - yeahboi", 2000)
 	} else if (mod_ = 1) {
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - nice", 2500)
+		obsc.showSceneDelayed(sceneNames.meme, "meme - nice", 2500)
 	} else if (mod_ = 2) {
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - kaboom-kaboom", 3000)
+		obsc.showSceneDelayed(sceneNames.meme, "meme - kaboom-kaboom", 3000)
 	} else {
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "win_" . (mod_-2) . ".gif", 4000)
+		obsc.showSceneDelayed(sceneNames.meme, "win_" . (mod_-2) . ".gif", 4000)
 	}
 	seq := seq + 1
 }
@@ -340,9 +346,9 @@ Numpad4::{
 	global
 	mod_ := Mod(seq, 4)
 	if (!mod) {
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - hit markers", 3500)
+		obsc.showSceneDelayed(sceneNames.meme, "meme - hit markers", 3500)
 	} else {
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "panic_" . (mod_ + 1) . ".gif", 4000)
+		obsc.showSceneDelayed(sceneNames.meme, "panic_" . (mod_ + 1) . ".gif", 4000)
 	}
 	seq := seq + 1
 }
@@ -354,15 +360,15 @@ Numpad5::showGifMeme("running_away_", 11)
 Numpad6::{
 	global
 	if (Mod(seq, 4) = 0)
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - to be continued", 10000)
+		obsc.showSceneDelayed(sceneNames.meme, "meme - to be continued", 10000)
 	if (Mod(seq, 4) = 1)
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - emotional damage", 4000)
+		obsc.showSceneDelayed(sceneNames.meme, "meme - emotional damage", 4000)
 	if (Mod(seq, 4) = 2)
-		obsc.showSceneDelayed(sceneNames.memeSceneName, "meme - coffin dance", 11000)
+		obsc.showSceneDelayed(sceneNames.meme, "meme - coffin dance", 11000)
 	if (Mod(seq, 4) = 3) {
 		obsc.SetCurrentProgramScene("Effect - Gaming - we'll be right back")
 		Sleep(4000)
-		obsc.SetCurrentProgramScene(sceneNames.gamingSceneName)
+		obsc.SetCurrentProgramScene(sceneNames.gaming)
 	}
 	seq := seq + 1
 }

@@ -2,7 +2,7 @@
 
 Handling OBS Studio via WebSocket with AutoHotKey.
 
-Looking for v1.1? [Click here](https://github.com/5ony/OBSWebSocketAHK/tree/1.1.1)
+Looking for v1.1 (deprecated)? [Click here](https://github.com/5ony/OBSWebSocketAHK/tree/1.1.1)
 
 This AutoHotKey library handles OBS websocket version: 5.0.1
 
@@ -36,6 +36,14 @@ Also, I would love to see what processes you have implemented with this script.
 
 ## 🔀 Change log
 
+### v2.0.1
+
+- added RetryConnection() to retry a closed connection
+- added GetWebSocketState() to get the standard WebSocket.readyState value
+- added IsWebSocketAlive() to check whether the connection is opened
+- modified Send() to retry sending if connection is closed
+- modified error handling, does not exit on error
+
 ### v2.0.0
 
 - rewritten for AutoHotKey v2.0
@@ -48,9 +56,7 @@ Also, I would love to see what processes you have implemented with this script.
 
 * Better true/false values
 * Screenshots from the OBS setup, Wireshark and UTF-8 with BOM
-* Make a script to be usable in a general OBS scene setup
-* Automatic connection retry
-* Automatic recovery from errors
+* Make an example script to be usable in a general OBS scene setup
 * Test all functionalities
 
 ## 🙏 Gratitude
