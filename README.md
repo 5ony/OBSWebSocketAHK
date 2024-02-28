@@ -36,13 +36,17 @@ Also, I would love to see what processes you have implemented with this script.
 
 ## 🔀 Change log
 
-### v2.0.1
+### v2.0.3
 
 - added RetryConnection() to retry a closed connection
 - added GetWebSocketState() to get the standard WebSocket.readyState value
 - added IsWebSocketAlive() to check whether the connection is opened
 - modified Send() to retry sending if connection is closed
 - modified error handling, does not exit on error
+
+### v2.0.2
+
+- fixed OpenSourceProjector() wrong and missing parameters
 
 ### v2.0.0
 
