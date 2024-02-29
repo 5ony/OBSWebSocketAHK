@@ -124,26 +124,26 @@ class MyOBSController extends ObsWebSocket {
 
 	; ---- housekeeping functions
 	; scene/sceneitem/input changed, name changes, profile changes
-	CurrentSceneCollectionChangedEvent(data) {
+	CurrentSceneCollectionChanged(data) {
 		this.AfterIdentified()
 	}
-	CurrentProfileChangedEvent(data) {
+	CurrentProfileChanged(data) {
 		this.AfterIdentified()
 	}
-	CurrentProgramSceneChangedEvent(data) {
+	CurrentProgramSceneChanged(data) {
 		this.currentProgramSceneName := data.d.eventData.sceneName
 	}
-	SceneItemCreatedEvent(data) {
+	SceneItemCreated(data) {
 		; creating a sceneItem will reinitialize/reread the scene where the enabling/disabling happened
 		this._initedScenes[data.d.eventData.sceneName] := 0
 		isInited := false
 		this.GetSceneItemList(data.d.eventData.sceneName, data.d.eventData.sceneName)
 	}
-	SceneItemRemovedEvent(data) {
+	SceneItemRemoved(data) {
 		; no need to read the whole list, but some housekeeping is needed
 		this.scenes[data.d.eventData.sceneName].Delete(data.d.eventData.sourceName)
 	}
-	SceneNameChangedEvent(data) {
+	SceneNameChanged(data) {
 		; copy data from old local variables to a new one with a new name
 		oldSceneName := data.d.eventData.oldSceneName
 		sceneName := data.d.eventData.sceneName
@@ -152,12 +152,12 @@ class MyOBSController extends ObsWebSocket {
 		this.scenes[sceneName] := this.scenes[oldSceneName]
 		this.scenes.Delete(oldSceneName)
 	}
-	InputNameChangedEvent(data) {
+	InputNameChanged(data) {
 		; TODO
 	}
 
 	; ---- Enabling/disabling/muting events here
-	SceneItemEnableStateChangedEvent(data) {
+	SceneItemEnableStateChanged(data) {
 		sceneName := data.d.eventData.sceneName
 		sceneItemName := this.findSceneItemById(sceneName, data.d.eventData.sceneItemId)
 		if (this.scenes[sceneName][sceneItemName].sceneItemId = data.d.eventData.sceneItemId) {
@@ -167,7 +167,7 @@ class MyOBSController extends ObsWebSocket {
 		}
 	}
 
-	InputMuteStateChangedEvent(data) {
+	InputMuteStateChanged(data) {
 		this.inputs[data.d.eventData.inputName] := data.d.eventData.inputMuted
 		; if you need to check whether an input is muted/unmuted, here is the place
 		if (data.d.eventData.inputName = this.microphoneName) {
@@ -175,12 +175,12 @@ class MyOBSController extends ObsWebSocket {
 		}
 	}
 
-	InputActiveStateChangedEvent(data) {
+	InputActiveStateChanged(data) {
 		; TODO
 		;data.d.eventData.inputName
 		;data.d.eventData.videoActive
 	}
-	InputShowStateChangedEvent(data) {
+	InputShowStateChanged(data) {
 		; TODO
 		;data.d.eventData.inputName
 		;data.d.eventData.videoShowing

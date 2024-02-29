@@ -12,7 +12,7 @@ class MyOBSController extends ObsWebSocket {
 		this.virtualCamActive := data.d.responseData.outputActive
 	}
 
-	VirtualcamStateChangedEvent(data) {
+	VirtualcamStateChanged(data) {
 		this.virtualCamActive := data.d.eventData.outputActive
 	}
 }

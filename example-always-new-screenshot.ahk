@@ -16,7 +16,7 @@ class MyOBSController extends ObsWebSocket {
 	}
 
 	SaveSourceScreenshotResponse(data) {
-		; ItemAC is an image source already on the current scene
+		; ItemAC is an image source already on the current scene, requestId contains the file name
 		this.SetInputSettings("ItemAC", {file: data.d.requestId})
 	}
 

@@ -10,7 +10,7 @@ class MyOBSController extends OBSWebSocket {
 	beRightBackSceneName := "Be right back"
 	gamingSceneName := "Gaming"
 
-	CurrentProgramSceneChangedEvent(data) {
+	CurrentProgramSceneChanged(data) {
 		; check if the scene change should change the microphone too
 		if ((data.d.eventData.sceneName = this.beRightBackSceneName && !this.muted) || (data.d.eventData.sceneName = this.gamingSceneName && this.muted)) {
 			this.muted := !this.muted
@@ -18,7 +18,7 @@ class MyOBSController extends OBSWebSocket {
 		}
 	}
 
-	InputMuteStateChangedEvent(data) {
+	InputMuteStateChanged(data) {
 		; check if the mute change is about the microphone
 		if (data.d.eventData.inputName = "Mic/Aux") {
 			; update global muted variable, so AHK have the same muted state as OBS

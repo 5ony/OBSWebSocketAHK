@@ -36,7 +36,7 @@ class MyOBSController extends ObsWebSocket {
 		this.SetSceneItemEnabled(this.sceneName, this.sceneItemsByName[sceneItem].id, this.Boolean(this.sceneItemsByName[sceneItem].enabled))
 	}
 
-	SceneItemEnableStateChangedEvent(data) {
+	SceneItemEnableStateChanged(data) {
 		; data format is defined here:
 		; https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#sceneitemenablestatechanged
 

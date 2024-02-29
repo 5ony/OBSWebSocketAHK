@@ -7,7 +7,7 @@
 class MyOBSController extends OBSWebSocket {
 	muted := false
 
-	InputMuteStateChangedEvent(data) {
+	InputMuteStateChanged(data) {
 		; check if the mute change is about the microphone
 		if (data.d.eventData.inputName = "Mic/Aux") {
 			this.muted := data.d.eventData.inputMuted

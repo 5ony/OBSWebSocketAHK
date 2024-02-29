@@ -36,12 +36,16 @@ Also, I would love to see what processes you have implemented with this script.
 
 ## 🔀 Change log
 
+### v2.0.4
+- added SetSilentMode() to enable/disable tray tips.
+- modified event functions: "Event" is not required in the name of the function. I.e. instead of `InputMuteStateChangedEvent()` you can use `InputMuteStateChanged()`. At the moment it is backward compatible, but functions with "Event" will be deprecated. If `InputMuteStateChangedEvent()` and `InputMuteStateChanged()` exist in the same script, the former (with Event) will be ignored and latter (without Event) will be executed.
+
 ### v2.0.3
 
-- added RetryConnection() to retry a closed connection
-- added GetWebSocketState() to get the standard WebSocket.readyState value
-- added IsWebSocketAlive() to check whether the connection is opened
-- modified Send() to retry sending if connection is closed
+- added `RetryConnection()` to retry a closed connection
+- added `GetWebSocketState()` to get the standard WebSocket.readyState value
+- added `IsWebSocketAlive()` to check whether the connection is opened
+- modified `Send()`; if connection is closed, retry connecting and retry sending the same request
 - modified error handling, does not exit on error
 
 ### v2.0.2
@@ -58,10 +62,12 @@ Also, I would love to see what processes you have implemented with this script.
 
 ### 🚧 To do (Might do)
 
+* Create synchronous calls (if possible)
 * Better true/false values
 * Screenshots from the OBS setup, Wireshark and UTF-8 with BOM
 * Make an example script to be usable in a general OBS scene setup
 * Test all functionalities
+* Shorter documentation
 
 ## 🙏 Gratitude
 
@@ -113,9 +119,9 @@ obsc := MyOBSController("ws://127.0.0.1:4455/")
 There are two main concepts are when handling messages between OBS and AHK (this script): Requests and Events.
 
 Requests are triggered by the script and have a Response.
-With a Request you can ask for lists of scenes, input devices, properties, and the response will contain the requested data.
+With a Request you can ask for lists of scenes, input devices, properties, and the ***async*** response will contain the requested data.
 
-An Event happens when something happens in OBS, such as the user changed a scene, started streaming.
+An Event happens when something happens in OBS, such as the user changed a scene, started streaming, etc.
 The catch is, a script can initiate an event too, so you can even make an infinite loop.
 Take care.
 
@@ -149,7 +155,7 @@ Note that:
 - Request methods do not return anything in itself, a callback has to be defined. For request `GetVersion` a callback should be called `GetVersionResponse`, which should handle the response data through an input parameter.
 
 The received data contains the full response from OBS in AutoHotKey object format.
-For the data structure, consult the [OBS websocket documentation](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md)
+For all requests and request parameter data structure consult the [OBS websocket documentation, Requests](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#requests)
 Every request method is implemented with parameters.
 
 Object parameters handle AHK objects, but there is one exception; AHK's true and false values are only shorthands for 1 and 0 values.
@@ -181,12 +187,13 @@ To subscibe to events, list them with a bitwise OR at the class initialization:
 
 Note the bitwise `|`, which is not a logical decision `||`
 
-Events, similarly to the requests, need a function where data can be received. The function name should be "event name" + "Event".
-For example muting an input in OBS will emit an `InputMuteStateChanged` event; to handle that there should be an `InputMuteStateChangedEvent` function (method under your class) to handle the data sent by OBS.
+Events, similarly to the requests, need a function where data can be received. The function name should be the event name as it is in the [OBS websocket documentation, Events](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#events).
+
+For example muting an input in OBS will emit an `InputMuteStateChanged` event; to handle that there should be an `InputMuteStateChanged` function (method under your class) to handle the data sent by OBS.
 
 ```
 class MyOBSController extends OBSWebSocket {
-	InputMuteStateChangedEvent(data) {
+	InputMuteStateChanged(data) {
 		inputName := data.d.inputName
 		inputMuted := data.d.inputMuted ? "muted 🔇" : "unmuted 🔊"
 		MsgBox(inputName . " is now " . inputMuted)
@@ -194,7 +201,66 @@ class MyOBSController extends OBSWebSocket {
 }
 ```
 
-However, the request `SetInputMute()` too will mute an input, hence triggering the same `InputMuteStateChanged` event.
+Note that your requests can trigger events as well; the request `SetInputMute()` too will mute an input, hence triggering the same `InputMuteStateChanged` event.
+
+For all events and event response data structure consult the [OBS websocket documentation, Events](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#events)
+
+
+## 🛠 Generic functions
+
+### AfterIdentified()
+
+This method (if exists) is called when the connection is established towards OBS and ready to be used.
+Initial requests should be added here.
+
+---
+
+### SetSilentMode(onOff: number)
+
+Enables/disables silent mode.
+
+| onOff | Description                        |
+|------:|------------------------------------|
+| 0     | Enables TrayTip messages           |
+| 1     | Default, disables TrayTip messages |
+
+---
+
+### RetryConnection()
+
+Retries to make a websocket connection.
+It will make a new connection regardless of the current websocket state, even if it is open and alive.
+
+---
+
+### IsWebSocketAlive()
+Returns a value whether the websocket is alive or not.
+
+| Value | Description |
+|------:|-------------|
+| 0     | Not alive   |
+| 1     | Alive       |
+
+---
+
+### GetWebSocketState()
+
+Returns standard WebSocket.readyState values:
+
+| Value | State      | Description                                              |
+|------:|------------|----------------------------------------------------------|
+| 0     | CONNECTING | Socket has been created. The connection is not yet open. |
+| 1     | OPEN       | The connection is open and ready to communicate.         |
+| 2     | CLOSING    | The connection is in the process of closing.             |
+| 3     | CLOSED     | The connection is closed or couldn't be opened.          |
+
+
+---
+
+### Boolean(variable: any)
+
+Casting an AHK variable to "true" or "false" (strings)
+
 
 ## Tips
 
@@ -433,7 +499,7 @@ This script will allow you to change the scene when the microphone is muted with
 class MyOBSController extends OBSWebSocket {
 	muted := false
 
-	InputMuteStateChangedEvent(data) {
+	InputMuteStateChanged(data) {
 		; check if the mute change is about the microphone
 		if (data.d.eventData.inputName = "Mic/Aux") {
 			this.muted := data.d.eventData.inputMuted
@@ -471,7 +537,7 @@ class MyOBSController extends OBSWebSocket {
 	beRightBackSceneName := "Be right back"
 	gamingSceneName := "Gaming"
 
-	CurrentProgramSceneChangedEvent(data) {
+	CurrentProgramSceneChanged(data) {
 		; check if the scene change should change the microphone too
 		if ((data.d.eventData.sceneName = this.beRightBackSceneName && !this.muted) || (data.d.eventData.sceneName = this.gamingSceneName && this.muted)) {
 			this.muted := !this.muted
@@ -479,7 +545,7 @@ class MyOBSController extends OBSWebSocket {
 		}
 	}
 
-	InputMuteStateChangedEvent(data) {
+	InputMuteStateChanged(data) {
 		; check if the mute change is about the microphone
 		if (data.d.eventData.inputName = "Mic/Aux") {
 			; update global muted variable, so AHK have the same muted state as OBS
@@ -494,11 +560,11 @@ obsc := MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscrip
 F12::obsc.SetInputMute("Mic/Aux", obsc.Boolean(!obsc.muted))
 ```
 
-The most important thing to notice here is that (after pressing F12) `SetInputMute()` triggers `InputMuteStateChangedEvent()` which calls `SetCurrentProgramScene()` which triggers `CurrentProgramSceneChangedEvent()` which calls `InputMuteStateChangedEvent()` which... do you see the pattern here?
+The most important thing to notice here is that (after pressing F12) `SetInputMute()` triggers `InputMuteStateChanged()` which calls `SetCurrentProgramScene()` which triggers `CurrentProgramSceneChanged()` which calls `InputMuteStateChanged()` which... do you see the pattern here?
 
 It is an infinite loop.
 
-Also, if the scene is changed, the infinite loop starts with `CurrentProgramSceneChangedEvent()`, but the effect is the same.
+Also, if the scene is changed, the infinite loop starts with `CurrentProgramSceneChanged()`, but the effect is the same.
 The runtime of infinite loops is quite long; I have not measured it yet, but it is close to the end of our known universe, or even worse, the script will freeze, so let's not do that.
 
 Here we skip the infinite loop by checking the muted state and the active scene.
@@ -617,7 +683,7 @@ NumpadSub::obsc.changeScore(-1)
 
 ### Start a scheduled recording
 
-example-scheduled-recording.ahk
+[example-scheduled-recording.ahk](example-scheduled-recording.ahk)
 
 ```
 #Include "lib/ObsWebSocket.ahk"
@@ -756,8 +822,76 @@ F2::{
 }
 ```
 
-### Taking screenshots
+### Open Windowed Projector
+
+[example-windowed-projector.ahk](example-windowed-projector.ahk)
+
+```
+#Include lib/ObsWebSocket.ahk
+
+class MyOBSController extends ObsWebSocket {
+	AfterIdentified() {
+		this.OpenSourceProjector("Video Capture Device")
+	}
+
+	OpenSourceProjectorResponse(data) {
+		MsgBox("Window is opened")
+	}
+}
+
+obsc := MyOBSController("ws://127.0.0.1:4455/")
+F11:: MsgBox("") ; this is here only for keeping the script running
+```
+
+### Taking screenshots to the same file
 
 [example-single-screenshot.ahk](example-single-screenshot.ahk)
 
+```
+#Include lib/ObsWebSocket.ahk
+
+class MyOBSController extends ObsWebSocket {
+	startScreenShot(sceneName) {
+		this.SaveSourceScreenshot(sceneName, "jpg", "c:\OBSscreenShots\screenshot.jpg")
+	}
+}
+
+obsc := MyOBSController("ws://127.0.0.1:4455/", "")
+
+F11::obsc.startScreenShot("Scene1")
+F12::obsc.startScreenShot("Scene2")
+```
+
+### Taking screenshots to new files
+
 [example-always-new-screenshot.ahk](example-always-new-screenshot.ahk)
+
+```
+#Include lib/ObsWebSocket.ahk
+
+class MyOBSController extends ObsWebSocket {
+	fnIndex := 0
+
+	startScreenShot(sceneName) {
+		this.fnIndex += 1
+
+		; directory should be already created
+		fileName := "c:\OBSscreenshots\screenshot" . this.fnIndex . ".jpg"
+
+		; we use the fileName as a requestId, so we will know which file is used for screenshot
+		requestId := fileName 
+		this.SaveSourceScreenshot(sceneName, "jpg", fileName, 0, 0, 0, requestId)
+	}
+
+	SaveSourceScreenshotResponse(data) {
+		; ItemAC is an image source already on the current scene, requestId contains the file name
+		this.SetInputSettings("ItemAC", {file: data.d.requestId})
+	}
+
+}
+
+obsc := MyOBSController("ws://127.0.0.1:4455/", "")
+
+F11::obsc.startScreenShot("SceneA")
+F12::obsc.startScreenShot("SceneB")
+```
