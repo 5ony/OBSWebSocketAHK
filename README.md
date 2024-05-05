@@ -36,8 +36,17 @@ Also, I would love to see what processes you have implemented with this script.
 
 ## 🔀 Change log
 
+### v2.0.5
+
+- added `SetRecordDirectory()` and `GetSourceFilterKindList()`
+- added example about enabling filters
+- updated `TriggerHotkeyByName()` with contextName
+- updated event codes
+- possibility to use UUIDs instead of "names" if required i.e. sceneName vs sceneUuid. If a parameter value, which is a "name" looks like a UUID, it will be used as a UUID. Affected names: sceneName, sourceName, inputName, destinationSceneName, transitionName, currentProgramSceneName, currentPreviewSceneName, currentSceneTransitionName.
+
 ### v2.0.4
-- added SetSilentMode() to enable/disable tray tips.
+
+- added `SetSilentMode()` to enable/disable tray tips.
 - modified event functions: "Event" is not required in the name of the function. I.e. instead of `InputMuteStateChangedEvent()` you can use `InputMuteStateChanged()`. At the moment it is backward compatible, but functions with "Event" will be deprecated. If `InputMuteStateChangedEvent()` and `InputMuteStateChanged()` exist in the same script, the former (with Event) will be ignored and latter (without Event) will be executed.
 
 ### v2.0.3
@@ -622,6 +631,18 @@ F9::obsc.toggleSceneItem("Video Capture Device")
 F10::obsc.toggleSceneItem("Audio Input Capture")
 F11::obsc.toggleSceneItem("Image")
 F12::obsc.toggleSceneItem("Display Capture")
+```
+
+### Toggle filter visibility
+
+[example-toggle-filter.ahk](example-toggle-filter.ahk)
+
+The linked example checks the current visibility of the filter on a scene and on a source. There a two different filters, but their name is the same, just to demonstrate that it is possible to have that setup.
+
+This is the main function to enable a filter:
+
+```
+obsc.SetSourceFilterEnabled("Scene", "Color Correction", obsc.Boolean(true))
 ```
 
 ### Toggle filter settings

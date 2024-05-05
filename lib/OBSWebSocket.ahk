@@ -2,7 +2,7 @@
  * Lib: OBSWebSocket.ahk
  *     OBS Studio WebScocket library for AutoHotkey
  * Version:
- *     v2.0.0 [updated 2023-11-11 (YYYY-MM-DD)]
+ *     v2.0.5 [updated 2024-05-05 (YYYY-MM-DD)]
  * Requirements:
  *     AutoHotkey v2.0+
  *     JSON.ahk - https://github.com/thqby/ahk2_lib/blob/master/JSON.ahk
@@ -56,6 +56,7 @@ class OBSWebSocket {
 		UnknownRequestType: 204,
 		GenericError: 205,
 		UnsupportedRequestBatchExecutionType: 206,
+		NotReady: 207,
 		MissingRequestField: 300,
 		MissingRequestData: 301,
 		InvalidRequestField: 400,
@@ -81,10 +82,11 @@ class OBSWebSocket {
 		ResourceCreationFailed: 700,
 		ResourceActionFailed: 701,
 		RequestProcessingFailed: 702,
-		CannotAct: 0
+		CannotAct: 703
 	}
 
 	static EventSubscription := {
+		None: 0,
 		General: 1 << 0,
 		Config: 1 << 1,
 		Scenes: 1 << 2,
@@ -248,7 +250,7 @@ class OBSWebSocket {
 	}
 
 	IsWebSocketAlive() {
-		return this.GetWebSocketState() = 1		
+		return this.GetWebSocketState() = 1
 	}
 
 	GetWebSocketState() {
@@ -324,6 +326,25 @@ class OBSWebSocket {
 		return string
 	}
 
+	__ConvertUuid(&obj, propName) {
+		if (obj.HasOwnProp(propName)) {
+			value := obj.%propName%
+
+			; check if name is a uuid
+			if (RegExMatch(value, "^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$")) {
+				obj.DeleteProp(propName)
+				propName := StrReplace(propName, "Name","Uuid")
+				obj.%propName% := value
+			}
+		}
+	}
+
+	__ConvertAllUuids(&obj) {
+		for key in ["sceneName", "sourceName", "inputName", "destinationSceneName", "transitionName", "currentProgramSceneName", "currentPreviewSceneName", "currentSceneTransitionName"] {
+			this.__ConvertUuid(&obj, key)
+		}
+	}
+
 	__GetFunctionName(funcName) {
 		return StrReplace(funcName, "OBSWebSocket.Prototype.", "")
 	}
@@ -342,6 +363,7 @@ class OBSWebSocket {
 		}
 		request := { op: OBSWebSocket.WebSocketOpCode.Request, d: { requestType: requestType, requestId: requestId }}
 		if (requestData != 0) {
+			this.__ConvertAllUuids(&requestData)
 			request.d.requestData := requestData
 		}
 		this.Send(this.__ReplaceBooleanValuesInJSON(request))
@@ -367,8 +389,12 @@ class OBSWebSocket {
 	GetHotkeyList(requestId := 0) {
 		this.__SendRequestToObs(A_ThisFunc, requestId)
 	}
-	TriggerHotkeyByName(hotkeyName, requestId := 0) {
-		this.__SendRequestToObs(A_ThisFunc, requestId, {hotkeyName: hotkeyName})
+	TriggerHotkeyByName(hotkeyName, contextName := 0, requestId := 0) {
+		data := {hotkeyName: hotkeyName}
+		if (contextName) {
+			data.contextName := contextName
+		}
+		this.__SendRequestToObs(A_ThisFunc, requestId, data)
 	}
 	TriggerHotkeyByKeySequence(keyId, shiftKey := "false", controlKey := "false", altKey := "false", commandKey := "false", requestId := 0) {
 		data := { keyId: keyId, shiftKey: shiftKey, controlKey: controlKey, altKey: altKey, commandKey: commandKey }
@@ -446,6 +472,9 @@ class OBSWebSocket {
 		this.__SendRequestToObs(A_ThisFunc, requestId, {streamServiceType: streamServiceType, streamServiceSettings: streamServiceSettings})
 	}
 	GetRecordDirectory(recordDirectory, requestId := 0) {
+		this.__SendRequestToObs(A_ThisFunc, requestId, {recordDirectory: recordDirectory})
+	}
+	SetRecordDirectory(recordDirectory, requestId := 0) {
 		this.__SendRequestToObs(A_ThisFunc, requestId, {recordDirectory: recordDirectory})
 	}
 	GetSourceActive(sourceName, requestId := 0) {
@@ -637,6 +666,9 @@ class OBSWebSocket {
 	}
 	SetTBarPosition(position, release:="true", requestId := 0) {
 		this.__SendRequestToObs(A_ThisFunc, requestId, {position: position, release: release})
+	}
+	GetSourceFilterKindList(requestId := 0) {
+		this.__SendRequestToObs(A_ThisFunc, requestId)
 	}
 	GetSourceFilterList(sourceName, requestId := 0) {
 		this.__SendRequestToObs(A_ThisFunc, requestId, {sourceName: sourceName})

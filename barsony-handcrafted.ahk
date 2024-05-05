@@ -244,6 +244,7 @@ class MyOBSController extends ObsWebSocket {
 		} else {
 			if (ShowMutedState) {
 				ShowMutedState.Destroy()
+				ShowMutedState := 0
 			}
 			this.sendColorToLedStrip("C007400FF00")
 			Sleep(100)
