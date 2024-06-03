@@ -221,6 +221,7 @@ class MyOBSController extends OBSWebSocket {
 ```
 
 After starting the script and toggling mute of an input in OBS, we will get this data: 
+
 ![Event data after toggling mute](event_data.jpg)
 
 From this, we can proceed accessing the values
