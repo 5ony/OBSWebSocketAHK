@@ -157,17 +157,26 @@ class MyOBSController extends OBSWebSocket {
 
 	GetVersionResponse(data) {
 		; 🧙 do your magic with data here ✨
+		res := JSON.stringify(data)
+		MsgBox(res)
 	}
 }
 
 obsc := MyOBSController("ws://127.0.0.1:4455/")
 ```
 Note that:
-- Every request and response are asynchronous, which means responses will arrive, but not in a timely manner, not even in order.
+- Every request and response are asynchronous, which means responses will arrive, but not in a timely manner, and order is not guaranteed.
 - `AfterIdentified()` method is the one where your OBS script can start. OBS methods cannot be called instantly after creating a new OBSWebSocket instance, because the connection is already asynchronous, and it might be still under negotiation. When the connection is successfully made, `AfterIdentified()` method will be called (if it is defined in your script).
 - Request methods do not return anything in itself, a callback has to be defined. For request `GetVersion` a callback should be called `GetVersionResponse`, which should handle the response data through an input parameter.
 
 The received data contains the full response from OBS in AutoHotKey object format.
+
+To check the data format of a response or event, you can use
+```
+res := JSON.stringify(data)
+MsgBox(res)
+```
+
 For all requests and request parameter data structure consult the [OBS websocket documentation, Requests](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#requests)
 Every request method is implemented with parameters.
 
@@ -198,17 +207,33 @@ To subscibe to events, list them with a bitwise OR at the class initialization:
 
 `obsc := MyOBSController("ws://127.0.0.1:4455/", 0, MyOBSController.EventSubscription.Inputs | MyOBSController.EventSubscription.Scenes)`
 
-Note the bitwise `|`, which is not a logical decision `||`
+Note the bitwise `|`, which is not a logical comparison  `||`
 
 Events, similarly to the requests, need a function where data can be received. The function name should be the event name as it is in the [OBS websocket documentation, Events](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#events).
 
-For example muting an input in OBS will emit an `InputMuteStateChanged` event; to handle that there should be an `InputMuteStateChanged` function (method under your class) to handle the data sent by OBS.
+For example un/muting an input in OBS will emit an `InputMuteStateChanged` event; to handle that there should be an `InputMuteStateChanged` function (method under your class) to handle the data sent by OBS.
+
+First, let's check the data structure for this event.
 
 ```
 class MyOBSController extends OBSWebSocket {
 	InputMuteStateChanged(data) {
-		inputName := data.d.inputName
-		inputMuted := data.d.inputMuted ? "muted 🔇" : "unmuted 🔊"
+		res := JSON.stringify(data)
+		MsgBox(res)
+	}
+}
+```
+
+After starting the script and toggling mute of an input in OBS, we will get this data: 
+
+![Event data after toggling mute](event_data.jpg)
+
+From this, we can proceed accessing the values
+```
+class MyOBSController extends OBSWebSocket {
+	InputMuteStateChanged(data) {
+		inputName := data.d.eventData.inputName
+		inputMuted := data.d.eventData.inputMuted ? "muted 🔇" : "unmuted 🔊"
 		MsgBox(inputName . " is now " . inputMuted)
 	}
 }
@@ -497,7 +522,7 @@ obsc := MyOBSController("ws://127.0.0.1:4455/")
 F12::obsc.toggleSceneItem()
 ```
 
-### Toggling microphone with AHK hotkey or in OBS toggles scene 
+### Toggling microphone with AHK hotkey or in OBS toggles scene
 
 [example-toggling-microphone-with-ahk-hotkey-or-obs-toggles-scene.ahk](example-toggling-microphone-with-ahk-hotkey-or-obs-toggles-scene.ahk)
 
