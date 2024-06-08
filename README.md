@@ -36,6 +36,10 @@ Also, I would love to see what processes you have implemented with this script.
 
 ## 🔀 Change log
 
+### v2.0.6
+
+- fixed `SetInputVolume()`
+
 ### v2.0.5
 
 - added `SetRecordDirectory()` and `GetSourceFilterKindList()`

@@ -171,6 +171,18 @@ class OBSWebSocket {
 		}
 	}
 
+	__Min(a, b) {
+		return a < b ? a : b
+	}
+
+	__Max(a, b) {
+		return a > b ? a : b
+	}
+
+	__Debug(obj) {
+		MsgBox(JSON.stringify(obj))
+	}
+
 	OnOpen(Event) {
 		this._hasWS := 1
 	}
@@ -600,15 +612,17 @@ class OBSWebSocket {
 	GetInputVolume(inputName, requestId := 0) {
 		this.__SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
 	}
-	SetInputVolume(inputName, inputVolumeMul:=-1, inputVolumeDb:=0, requestId := 0) {
+	SetInputVolume(inputName, inputVolumeMul:=-200, inputVolumeDb:=-200, requestId := 0) {
 		data := {inputName: inputName}
-		if (inputVolumeMul > -1) {
-			data.inputVolumeMul := inputVolumeMul
+		if (inputVolumeMul != -200) {
+			; mul	>= 0, <= 20	inputVolumeDb should be specified
+			data.inputVolumeMul := this.__Min(this.__Max(0, inputVolumeMul), 20) || 0
 		}
-		if (inputVolumeDb) {
-			data.inputVolumeDb := inputVolumeDb
+		if (inputVolumeDb != -200) {
+			; dB	>= -100, <= 26	inputVolumeMul should be specified		
+			data.inputVolumeDb := this.__Min(this.__Max(-100, inputVolumeDb), 26)
 		}
-		this.__SendRequestToObs(A_ThisFunc, requestId)
+		this.__SendRequestToObs(A_ThisFunc, requestId, data)
 	}
 	GetInputAudioBalance(inputName, requestId := 0) {
 		this.__SendRequestToObs(A_ThisFunc, requestId, {inputName: inputName})
