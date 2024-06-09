@@ -2,7 +2,7 @@
  * Lib: OBSWebSocket.ahk
  *     OBS Studio WebScocket library for AutoHotkey
  * Version:
- *     v2.0.5 [updated 2024-05-05 (YYYY-MM-DD)]
+ *     v2.0.7 [updated 2024-06-09 (YYYY-MM-DD)]
  * Requirements:
  *     AutoHotkey v2.0+
  *     JSON.ahk - https://github.com/thqby/ahk2_lib/blob/master/JSON.ahk
