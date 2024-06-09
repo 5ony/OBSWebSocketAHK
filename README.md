@@ -36,6 +36,14 @@ Also, I would love to see what processes you have implemented with this script.
 
 ## 🔀 Change log
 
+### v2.0.7
+
+- added `SplitRecordFile()`, `CreateRecordChapter()`, `GetSceneItemSource()` methods
+- added value restrictions
+- added `__Min()`, `__Max()`, `__MinMax()`, `__Debug()` internal methods
+- fixed `GetProfileList()`, `GetRecordDirectory()`, `GetGroupList()` parameter list
+- added example for transforming a scene item
+
 ### v2.0.6
 
 - fixed `SetInputVolume()`
@@ -157,8 +165,7 @@ class MyOBSController extends OBSWebSocket {
 
 	GetVersionResponse(data) {
 		; 🧙 do your magic with data here ✨
-		res := JSON.stringify(data)
-		MsgBox(res)
+		this.__Debug(data)
 	}
 }
 
@@ -171,10 +178,9 @@ Note that:
 
 The received data contains the full response from OBS in AutoHotKey object format.
 
-To check the data format of a response or event, you can use
+To check an object for the format of a response or event, you can use (within the class)
 ```
-res := JSON.stringify(data)
-MsgBox(res)
+this.__Debug(data)
 ```
 
 For all requests and request parameter data structure consult the [OBS websocket documentation, Requests](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#requests)
@@ -729,6 +735,92 @@ obsc := MyOBSController("ws://127.0.0.1:4455/")
 
 NumpadAdd::obsc.changeScore(1)
 NumpadSub::obsc.changeScore(-1)
+```
+
+### Moving, rotating, scaling a scene item
+
+[example-transform-item.ahk](example-transform-item.ahk)
+
+The below script works for a scene named as "Scene" and an image as a scene item, named as "Image".
+Pressing the numpad keys will move, rotate and scale the image.
+
+Note that SetSceneItemTransform() method needs a sceneItemId (not the name), so the script requests that first.
+Then it requests the basic transform values.
+
+Also note that if the image is moved by hand in OBS while the script is running, this script will ignore that, and will use the values requested at initialization.
+However, if hand moved values required to be updated, [SceneItemTransformChanged](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#sceneitemtransformchanged) event can be used to receive the actual values.
+It would have been overkill using it here, so I have skipped it.
+
+```
+#Requires AutoHotkey >=2.0-
+#Include lib/ObsWebSocket.ahk
+
+class MyOBSController extends ObsWebSocket {
+
+	sceneName := "Scene"
+	sceneItemName := "Image"
+	sceneItemId := 0
+	sceneItemTransform := {}
+
+	AfterIdentified() {
+		; for transforming a scene item, we need to know the scene ID, so we request it here
+		this.GetSceneItemId(this.sceneName, this.sceneItemName)
+	}
+
+	GetSceneItemIdResponse(data) {
+		this.sceneItemId := data.d.responseData.sceneItemId
+		; let's request for the base transform values
+		this.GetSceneItemTransform(this.sceneName, this.sceneItemId)
+	}
+
+	GetSceneItemTransformResponse(data) {
+		; copying only those properties which we want to set
+		this.sceneItemTransform.positionX := data.d.responseData.sceneItemTransform.positionX
+		this.sceneItemTransform.positionY := data.d.responseData.sceneItemTransform.positionY
+		this.sceneItemTransform.rotation := data.d.responseData.sceneItemTransform.rotation
+		this.sceneItemTransform.scaleX := data.d.responseData.sceneItemTransform.scaleX
+		this.sceneItemTransform.scaleY := data.d.responseData.sceneItemTransform.scaleY
+	}
+
+	moveItem(deltaX, deltaY) {
+		this.sceneItemTransform.positionX := this.sceneItemTransform.positionX + deltaX
+		this.sceneItemTransform.positionY := this.sceneItemTransform.positionY + deltaY
+		this.SetSceneItemTransform(this.sceneName, this.sceneItemId, this.sceneItemTransform)
+	}
+
+	rotateItem(deltaRotation) {
+		this.sceneItemTransform.rotation := this.sceneItemTransform.rotation + deltaRotation
+		if (this.sceneItemTransform.rotation < 0) {
+			this.sceneItemTransform.rotation := this.sceneItemTransform.rotation + 360
+		}
+		if (this.sceneItemTransform.rotation > 360) {
+			this.sceneItemTransform.rotation := this.sceneItemTransform.rotation - 360
+		}
+		this.SetSceneItemTransform(this.sceneName, this.sceneItemId, this.sceneItemTransform)
+	}
+
+	scaleItem(deltaScaleX, deltaScaleY) {
+		this.sceneItemTransform.scaleX := this.sceneItemTransform.scaleX + deltaScaleX
+		this.sceneItemTransform.scaleY := this.sceneItemTransform.scaleY + deltaScaleY
+		this.SetSceneItemTransform(this.sceneName, this.sceneItemId, this.sceneItemTransform)
+	}
+
+}
+
+obsc := MyOBSController("ws://127.0.0.1:4455/")
+
+Numpad1::obsc.moveItem(-5,5)
+Numpad2::obsc.moveItem(0,5)
+Numpad3::obsc.moveItem(5,5)
+Numpad4::obsc.moveItem(-5,0)
+Numpad6::obsc.moveItem(5,0)
+Numpad7::obsc.moveItem(-5,-5)
+Numpad8::obsc.moveItem(0,-5)
+Numpad9::obsc.moveItem(5,-5)
+NumpadAdd::obsc.rotateItem(5)
+NumpadSub::obsc.rotateItem(-5)
+NumpadMult::obsc.scaleItem(0.1, 0.1)
+NumpadDiv::obsc.scaleItem(-0.1, -0.1)
 ```
 
 ### Start a scheduled recording
