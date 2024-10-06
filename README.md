@@ -6,7 +6,7 @@ Looking for v1.1 (deprecated)? [Click here](https://github.com/5ony/OBSWebSocket
 
 This AutoHotKey library handles OBS websocket version: 5.0.1
 
-Basic functionality tested with OBS Studio 29.1.3 (64 bit)
+Basic functionality tested with OBS Studio 30.2.3 (64 bit)
 
 ## 🤔 Why would you want to use this script?
 
@@ -36,59 +36,12 @@ Also, I would love to see what processes you have implemented with this script.
 
 ## 🔀 Change log
 
-### v2.0.7
+For the full change log, see [CHANGELOG.md](https://github.com/5ony/OBSWebSocketAHK/blob/main/CHANGELOG.md)
 
-- added `SplitRecordFile()`, `CreateRecordChapter()`, `GetSceneItemSource()` methods
-- added value restrictions
-- added `__Min()`, `__Max()`, `__MinMax()`, `__Debug()` internal methods
-- fixed `GetProfileList()`, `GetRecordDirectory()`, `GetGroupList()` parameter list
-- added example for transforming a scene item
+### v2.1.0 - 2024-10-06
 
-### v2.0.6
-
-- fixed `SetInputVolume()`
-
-### v2.0.5
-
-- added `SetRecordDirectory()` and `GetSourceFilterKindList()`
-- added example about enabling filters
-- updated `TriggerHotkeyByName()` with contextName
-- updated event codes
-- possibility to use UUIDs instead of "names" if required i.e. sceneName vs sceneUuid. If a parameter value, which is a "name" looks like a UUID, it will be used as a UUID. Affected names: sceneName, sourceName, inputName, destinationSceneName, transitionName, currentProgramSceneName, currentPreviewSceneName, currentSceneTransitionName.
-
-### v2.0.4
-
-- added `SetSilentMode()` to enable/disable tray tips.
-- modified event functions: "Event" is not required in the name of the function. I.e. instead of `InputMuteStateChangedEvent()` you can use `InputMuteStateChanged()`. At the moment it is backward compatible, but functions with "Event" will be deprecated. If `InputMuteStateChangedEvent()` and `InputMuteStateChanged()` exist in the same script, the former (with Event) will be ignored and latter (without Event) will be executed.
-
-### v2.0.3
-
-- added `RetryConnection()` to retry a closed connection
-- added `GetWebSocketState()` to get the standard WebSocket.readyState value
-- added `IsWebSocketAlive()` to check whether the connection is opened
-- modified `Send()`; if connection is closed, retry connecting and retry sending the same request
-- modified error handling, does not exit on error
-
-### v2.0.2
-
-- fixed OpenSourceProjector() wrong and missing parameters
-
-### v2.0.0
-
-- rewritten for AutoHotKey v2.0
-- merged websocket handling to remove library dependency
-- changed libraries
-- changed MsgBox popups to a more elegant TrayTip notification
-- added more examples
-
-### 🚧 To do (Might do)
-
-* Create synchronous calls (if possible)
-* Better true/false values
-* Screenshots from the OBS setup, Wireshark and UTF-8 with BOM
-* Make an example script to be usable in a general OBS scene setup
-* Test all functionalities
-* Shorter documentation
+- added DebugConsole() to show messages between OBS and AHK (for usage, see [Debugging Message data with internal console](#debugging-message-data-with-internal-console))
+- separated change log to CHANGELOG.md
 
 ## 🙏 Gratitude
 
@@ -298,6 +251,9 @@ Returns standard WebSocket.readyState values:
 | 2     | CLOSING    | The connection is in the process of closing.             |
 | 3     | CLOSED     | The connection is closed or couldn't be opened.          |
 
+### DebugConsole()
+
+Shows a console where every sent and received messages will be shown. Skips basic connection messages.
 
 ---
 
@@ -308,6 +264,40 @@ Casting an AHK variable to "true" or "false" (strings)
 
 ## Tips
 
+### 💌 Debugging Message data with internal console
+
+The built-in DebugConsole allows you to debug messages sent to and received from OBS.
+
+To activate the console, you just need to call the DebugConsole() method.
+Remember to deactivate this method when using script in production.
+
+```
+obsc := OBSWebSocket("ws://127.0.0.1:4455/")
+obsc.DebugConsole()
+```
+
+### 💌 Debugging Message data
+
+Highly recommended to use [scite4ahk](https://www.autohotkey.com/scite4ahk/).
+You can easily set breakpoints and check the format of the received data.
+It is a great AHK debugging tool in general.
+
+### ✉ Debugging Websocket messages (optional)
+
+Messages can be intercepted with [WireShark](https://www.wireshark.org).
+
+Set the adapter to "Adapter for loopback traffic capture", set display filter to websocket.
+Use the script and if there is any messages between OBS and your script, it will be listed.
+You can check the message content.
+If the message content is masked, you can unmask it.
+Note that you might need the connection phase too for this to unmask the raw data.
+
+### 🙂 Emojis
+
+If you are using emojis (in scene names, input names, or just in general), make sure you save the files with "UTF-8 with BOM" option.
+This can be set even in Windows Notepad.
+You might just have been saved from "Scene not found" error messages.
+
 ### 🛅 Names vs ID
 
 Some responses give back ID numbers, some requests need ID numbers as an input parameter.
@@ -317,6 +307,11 @@ For example `SetSceneItemEnabled()` method needs a scene name, a scene item ID a
 Yes, I also think it is kind of lame (looking at you OBS Project guys), but that is what it is.
 
 You will find more examples at the examples section.
+
+### 🎭 Scene transition events
+
+When changing scenes it is easier to use `SceneTransitionEnded` event instead of `CurrentProgramSceneChanged`, because the latter one will trigger two changes: with the scene we are changing from and with the new one we are changing to (which you might or might not desire).
+`SceneTransitionEnded` will be triggered only once with the new scene.
 
 ### 👨‍👩‍👧‍👦 Handling groups (not recommended)
 
@@ -342,33 +337,6 @@ class MyOBSController extends OBSWebSocket {
 	}
 }
 ```
-
-### 🎭 Scene transition events
-
-When changing scenes it is easier to use `SceneTransitionEnded` event instead of `CurrentProgramSceneChanged`, because the latter one will trigger two changes: with the scene we are changing from and with the new one we are changing to (which you might or might not desire).
-`SceneTransitionEnded` will be triggered only once with the new scene.
-
-### 🙂 Emojis
-
-If you are using emojis (in scene names, input names, or just in general), make sure you save the files with "UTF-8 with BOM" option.
-This can be set even in Windows Notepad.
-You might just have been saved from "Scene not found" error messages.
-
-### ✉ Debugging Websocket messages (optional)
-
-Messages can be intercepted with [WireShark](https://www.wireshark.org).
-
-Set the adapter to "Adapter for loopback traffic capture", set display filter to websocket.
-Use the script and if there is any messages between OBS and your script, it will be listed.
-You can check the message content.
-If the message content is masked, you can unmask it.
-Note that you might need the connection phase too for this to unmask the raw data.
-
-### 💌 Debugging Message data
-
-Highly recommended to use [scite4ahk](https://www.autohotkey.com/scite4ahk/).
-You can easily set breakpoints and check the format of the received data.
-It is a great AHK debugging tool in general.
 
 ## 🧐 Examples
 

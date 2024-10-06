@@ -113,6 +113,7 @@ class OBSWebSocket {
 	_hasWS := 0
 	_websocketUrl := ""
 	_isSilent := 1
+	_console := false
 
 	__New(websocketUrl, pwd := 0, subscriptions := 0, isSilent := 1) {
 		this._eventSubscriptions := subscriptions
@@ -120,6 +121,12 @@ class OBSWebSocket {
 		this._websocketUrl := websocketUrl
 		this._isSilent := isSilent
 		this.__CreateBasicWS(websocketUrl)
+	}
+
+	DebugConsole() {
+		if (!this._console) {
+			this._console := DebugConsole()
+		}
 	}
 
 	__CreateBasicWS(WS_URL) {
@@ -193,6 +200,9 @@ class OBSWebSocket {
 
 	OnMessage(Event) {
 		value := MapToObject(JSON.parse(Event.data))
+		if (this._console) {
+			this._console.log("Received:`n" . JSON.stringify(value))
+		}
 		if (value.op = OBSWebSocket.WebSocketOpCode.RequestResponse) {
 			if (value.d.requestStatus.code != OBSWebSocket.RequestStatus.Success) {
 				errorTxt := "Error, RequestStatus: "
@@ -382,7 +392,12 @@ class OBSWebSocket {
 			this.__ConvertAllUuids(&requestData)
 			request.d.requestData := requestData
 		}
-		this.Send(this.__ReplaceBooleanValuesInJSON(request))
+
+		valueToSend := this.__ReplaceBooleanValuesInJSON(request)
+		this.Send(valueToSend)
+		if(this._console) {
+			this._console.log("Sent:`n" . valueToSend)
+		}
 	}
 
 	;------------ OBS WebSocket handling messages
@@ -963,6 +978,23 @@ class OBSWebSocket {
 }
 
 ; ---------- UTILITIES
+class DebugConsole {
+
+    DebugGui := Gui("+Resize")
+    Textarea := this.DebugGui.AddEdit("w400 h600")
+
+    __New() {
+        ; this.DebugGui.AddButton(,"Add text").OnEvent("Click", this.AddText)
+        this.DebugGui.Show ; Show the GUI window
+    }
+    
+    log(newText) {
+        NewLine := "`n-------------------------------------------------------------------------`n"
+        this.Textarea.value := this.Textarea.value . "`n" . newText . NewLine
+        ControlSend("^{End}", this.Textarea)
+    }
+
+}
 
 MapToObject(mapPart) {
 	objPart := {}
