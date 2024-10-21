@@ -15,7 +15,7 @@ class MyOBSController extends OBSWebSocket {
 
 	AfterIdentified() {
 		this.GetSourceFilter("Scene", "Color Correction", "scene-cc")
-		this.GetSourceFilter("Display capture", "Color Correction", "source-cc")
+		this.GetSourceFilter("Display Capture", "Color Correction", "source-cc")
 		this.GetSceneItemList("Scene")
 	}
 
@@ -44,5 +44,5 @@ F11::{
 ; change source/scene item filter
 F12:: {
 	obsc.filterStatusOnSource := !obsc.filterStatusOnSource
-	obsc.SetSourceFilterEnabled("Display capture", "Color Correction", obsc.Boolean(obsc.filterStatusOnSource))
+	obsc.SetSourceFilterEnabled("Display Capture", "Color Correction", obsc.Boolean(obsc.filterStatusOnSource))
 }

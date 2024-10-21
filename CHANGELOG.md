@@ -1,3 +1,9 @@
+### v2.1.1 - 2024-10-21
+
+- added OBSWebSocketAHK-helper.ahk [OBSWebSocketAHK-helper.md](https://github.com/5ony/OBSWebSocketAHK/blob/main/OBSWebSocketAHK-helper.md)
+- renamed DebugConsole() to StartDebugConsole()
+- fixed minor bugs in examples
+
 ### v2.1.0 - 2024-10-06
 
 - added DebugConsole() to show messages between OBS and AHK (for usage, see [Debugging Message data with internal console](#debugging-message-data-with-internal-console))

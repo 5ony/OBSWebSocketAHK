@@ -2,13 +2,13 @@
 
 Handling OBS Studio via WebSocket with AutoHotKey.
 
-Looking for v1.1 (deprecated)? [Click here](https://github.com/5ony/OBSWebSocketAHK/tree/1.1.1)
-
-This AutoHotKey library handles OBS websocket version: 5.0.1
+This AutoHotKey library handles OBS websocket version: 5.0.1+
 
 Basic functionality tested with OBS Studio 30.2.3 (64 bit)
 
 ## 🤔 Why would you want to use this script?
+
+You can code any interaction, which might not be possible with OBS alone.
 
 Let be here some inspiration:
 
@@ -38,25 +38,29 @@ Also, I would love to see what processes you have implemented with this script.
 
 For the full change log, see [CHANGELOG.md](https://github.com/5ony/OBSWebSocketAHK/blob/main/CHANGELOG.md)
 
-### v2.1.0 - 2024-10-06
+### v2.1.1 - 2024-10-21
 
-- added DebugConsole() to show messages between OBS and AHK (for usage, see [Debugging Message data with internal console](#debugging-message-data-with-internal-console))
-- separated change log to CHANGELOG.md
+- added OBSWebSocketAHK-helper.ahk [OBSWebSocketAHK-helper.md](https://github.com/5ony/OBSWebSocketAHK/blob/main/OBSWebSocketAHK-helper.md)
+- renamed DebugConsole() to StartDebugConsole()
+- fixed minor bugs in examples
 
 ## 🙏 Gratitude
 
-Thanks for [G33kDude](https://github.com/G33kDude) for the original websocket and json script, joedf and Masonjar13 for libcrypt.ahk and of course the AHK community, the OBS websocket and OBS Studio guys.
+Thanks for [G33kDude](https://github.com/G33kDude) for the original websocket and json script, joedf and Masonjar13 for [libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk/blob/master/build/libcrypt.ahk) and of course the AHK community, the OBS websocket and OBS Studio guys.
 
-Please support them and if I have earned a coffee from you, please be kind to support me here:
+Please support them and if I you are happy with this tool in particular, please be kind to support me here:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/N4N6FX30H)
 
 ## 💥 Quick setup
 
-- Download a release version. For easier setup, release version includes these libraries:
+- [Download a release version](https://github.com/5ony/OBSWebSocketAHK/releases). For easier setup, release version includes these libraries:
 	- [JSON.ahk](https://github.com/thqby/ahk2_lib/blob/master/JSON.ahk)
 	- [Class_CNG.ahk](https://github.com/jNizM/AHK_CNG/blob/master/src/Class_CNG.ahk)
 - Open OBS Studio, and navigate to Tools -> Websocket Server Settings, and leave the window open.
+
+![obs setup](obs-setup.jpg)
+
 - Uncheck "Enable Authentication" to use the examples without password. (You can use your own scripts with password.)
 - Click on "Show Connect Info" button.
 - If the script will run from a different computer than where OBS Studio runs, copy the IP addess from here to your scripts.
@@ -68,7 +72,7 @@ Please support them and if I have earned a coffee from you, please be kind to su
 #Include lib/OBSWebSocket.ahk
 
 obsc := OBSWebSocket("ws://127.0.0.1:4455/")
-; or, if you are using password:
+; or if you want to use password:
 ; obsc := MyOBSController("ws://127.0.0.1:4455/", "YourPasswordHere")
 
 ```
@@ -100,12 +104,14 @@ The catch is, a script can initiate an event too, so you can even make an infini
 Take care.
 
 Simply put:
-- script Request 🡺 OBS ... OBS Response 🡺 script
+- script Request 🡺 OBS receives message, OBS does what you've requested for, OBS Response 🡺 script
+	- example: disable a scene 🡺 OSB hides the scene 🡺 responds with OK to script
 - OBS Event 🡺 script
+	- example: you click on the eye icon in OBS to disable a scene 🡺 OSB hides the scene 🡺 OBS event fired 🡺 if script is listening, receives the fired event
 
 ### 🔄 Requests to OBS
 
-Requests towards OBS Studio usually have a response as well. Responses need a separate class method with the name of the request + 'Response'.
+Requests towards OBS Studio usually have a response as well. Responses need a separate class method (function) with the name of the request + 'Response'.
 
 For example, checking OBS version:
 
@@ -123,11 +129,14 @@ class MyOBSController extends OBSWebSocket {
 }
 
 obsc := MyOBSController("ws://127.0.0.1:4455/")
+
+F11:: MsgBox("") ; this is here only for keeping the script running
 ```
 Note that:
+- The F11 bind is to keep AHK running. Without this, the script will not "wait" for anything (i.e. responses), it just runs once and closes.
 - Every request and response are asynchronous, which means responses will arrive, but not in a timely manner, and order is not guaranteed.
 - `AfterIdentified()` method is the one where your OBS script can start. OBS methods cannot be called instantly after creating a new OBSWebSocket instance, because the connection is already asynchronous, and it might be still under negotiation. When the connection is successfully made, `AfterIdentified()` method will be called (if it is defined in your script).
-- Request methods do not return anything in itself, a callback has to be defined. For request `GetVersion` a callback should be called `GetVersionResponse`, which should handle the response data through an input parameter.
+- Request methods do not return anything in themselves, a callback function has to be defined. For request `GetVersion` a callback should be called `GetVersionResponse`, which should handle the response data through an input parameter.
 
 The received data contains the full response from OBS in AutoHotKey object format.
 
@@ -135,6 +144,10 @@ To check an object for the format of a response or event, you can use (within th
 ```
 this.__Debug(data)
 ```
+
+Alternatively you can turn on a message debugger window, which is highly recommended, see [StartDebugConsole()](#startdebugconsole)
+
+As a second alternative, you can start OBSWebSocketAHK-helper.ahk for more detailed logs.
 
 For all requests and request parameter data structure consult the [OBS websocket documentation, Requests](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#requests)
 Every request method is implemented with parameters.
@@ -177,8 +190,7 @@ First, let's check the data structure for this event.
 ```
 class MyOBSController extends OBSWebSocket {
 	InputMuteStateChanged(data) {
-		res := JSON.stringify(data)
-		MsgBox(res)
+		this.__Debug(data)
 	}
 }
 ```
@@ -251,9 +263,18 @@ Returns standard WebSocket.readyState values:
 | 2     | CLOSING    | The connection is in the process of closing.             |
 | 3     | CLOSED     | The connection is closed or couldn't be opened.          |
 
-### DebugConsole()
+### StartDebugConsole()
 
-Shows a console where every sent and received messages will be shown. Skips basic connection messages.
+Shows a console where every sent and received messages will be shown.
+Basic connection messages will not be displayed.
+
+To activate the console, you just need to call the StartDebugConsole() method.
+Remember to deactivate this method when using script in production.
+
+```
+obsc := OBSWebSocket("ws://127.0.0.1:4455/")
+obsc.StartDebugConsole()
+```
 
 ---
 
@@ -261,26 +282,19 @@ Shows a console where every sent and received messages will be shown. Skips basi
 
 Casting an AHK variable to "true" or "false" (strings)
 
-
 ## Tips
-
-### 💌 Debugging Message data with internal console
-
-The built-in DebugConsole allows you to debug messages sent to and received from OBS.
-
-To activate the console, you just need to call the DebugConsole() method.
-Remember to deactivate this method when using script in production.
-
-```
-obsc := OBSWebSocket("ws://127.0.0.1:4455/")
-obsc.DebugConsole()
-```
 
 ### 💌 Debugging Message data
 
 Highly recommended to use [scite4ahk](https://www.autohotkey.com/scite4ahk/).
 You can easily set breakpoints and check the format of the received data.
 It is a great AHK debugging tool in general.
+
+### ✉ Debugging Websocket messages
+
+I've created a small message logger, called OBSWebSocketAHK-helper.ahk
+
+Click here for details: [OBSWebSocketAHK-helper.md](https://github.com/5ony/OBSWebSocketAHK/blob/main/OBSWebSocketAHK-helper.md)
 
 ### ✉ Debugging Websocket messages (optional)
 

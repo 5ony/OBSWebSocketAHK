@@ -118,18 +118,18 @@ class OBSWebSocket {
 	__New(websocketUrl, pwd := 0, subscriptions := 0, isSilent := 1) {
 		this._eventSubscriptions := subscriptions
 		this._pwd := pwd
+		this._isSilent := 0
 		this._websocketUrl := websocketUrl
-		this._isSilent := isSilent
-		this.__CreateBasicWS(websocketUrl)
+		this.__CreateBasicWS()
 	}
 
-	DebugConsole() {
+	StartDebugConsole(control := 0) {
 		if (!this._console) {
-			this._console := DebugConsole()
+			this._console := DebugConsole(control)
 		}
 	}
 
-	__CreateBasicWS(WS_URL) {
+	__CreateBasicWS() {
 		this._IEGui := Gui()
 		this.explorer := this._IEGui.Add("ActiveX", "", "Shell.Explorer").Value
 		this.explorer.Navigate("about:<!DOCTYPE html><meta http-equiv='X-UA-Compatible' content='IE=edge'><body></body>")
@@ -137,7 +137,7 @@ class OBSWebSocket {
 			Sleep(50)
 		this.document := this.explorer.document
 		this.document.parentWindow.ahk_event := this.__WSEvent.Bind(this)
-		this.document.parentWindow.ahk_ws_url := WS_URL
+		this.document.parentWindow.ahk_ws_url := this._websocketUrl
 		Script := this.document.createElement("script")
 		Script.text := "ws = new WebSocket(ahk_ws_url);`n"
 		. "ws.onopen = function(event){ ahk_event('OnOpen', event); };`n"
@@ -172,9 +172,9 @@ class OBSWebSocket {
 			this.%EventName%(Event)
 	}
 
-	__TrayTipMsg(msg, title, icon) {
+	__TrayTipMsg(msg, title, icon, mute := true) {
 		if (!this._isSilent) {
-			TrayTip(msg, title, icon)
+			TrayTip(msg, title, icon | (mute ? 16 : 0))
 		}
 	}
 
@@ -265,12 +265,12 @@ class OBSWebSocket {
 
 	RetryConnection() {
 		; retry
-		this.__CreateBasicWS(this._websocketUrl)
+		this.__CreateBasicWS()
 		state := 0
 
 		while (state = 0) {
 			state := this.GetWebSocketState()
-			Sleep(2000)
+			Sleep(3000)
 		}
 		return state
 	}
@@ -291,7 +291,7 @@ class OBSWebSocket {
 	}
 
 	Boolean(booleanValue) {
- 		return booleanValue ? "true" : "false"
+		return booleanValue ? "true" : "false"
 	}
 
 
@@ -980,19 +980,21 @@ class OBSWebSocket {
 ; ---------- UTILITIES
 class DebugConsole {
 
-    DebugGui := Gui("+Resize")
-    Textarea := this.DebugGui.AddEdit("w400 h600")
-
-    __New() {
-        ; this.DebugGui.AddButton(,"Add text").OnEvent("Click", this.AddText)
-        this.DebugGui.Show ; Show the GUI window
-    }
-    
-    log(newText) {
-        NewLine := "`n-------------------------------------------------------------------------`n"
-        this.Textarea.value := this.Textarea.value . "`n" . newText . NewLine
-        ControlSend("^{End}", this.Textarea)
-    }
+	__New(control := 0) {
+		if (control) {
+			this.Textarea := control
+		} else {
+			this.DebugGui := Gui("+Resize")
+			this.Textarea := this.DebugGui.AddEdit("w400 h600")
+			this.DebugGui.Show
+			this.DebugGui.Title := "OBSWebSocketAHK messages (beta)"
+		}
+	}
+	
+	log(newText) {
+		NewLine := "`n-------------------------------------------------------------------------`n"
+		this.Textarea.value := newText . NewLine . this.Textarea.value
+	}
 
 }
 
