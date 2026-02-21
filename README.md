@@ -38,6 +38,10 @@ Also, I would love to see what processes you have implemented with this script.
 
 For the full change log, see [CHANGELOG.md](https://github.com/5ony/OBSWebSocketAHK/blob/main/CHANGELOG.md)
 
+### v2.2.0 - 2026-02-21
+
+- changed WebSocket library to [WebSocket.ahk](https://github.com/thqby/ahk2_lib/blob/master/WebSocket.ahk)
+
 ### v2.1.1 - 2024-10-21
 
 - added OBSWebSocketAHK-helper.ahk [OBSWebSocketAHK-helper.md](https://github.com/5ony/OBSWebSocketAHK/blob/main/OBSWebSocketAHK-helper.md)
@@ -46,7 +50,12 @@ For the full change log, see [CHANGELOG.md](https://github.com/5ony/OBSWebSocket
 
 ## 🙏 Gratitude
 
-Thanks for [G33kDude](https://github.com/G33kDude) for the original websocket and json script, joedf and Masonjar13 for [libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk/blob/master/build/libcrypt.ahk) and of course the AHK community, the OBS websocket and OBS Studio guys.
+Thanks for:
+- [G33kDude](https://github.com/G33kDude) for the original websocket and json script
+- [thqby](https://github.com/thqby/) for the newer websocket and json script
+- joedf and Masonjar13 for [libcrypt.ahk](https://github.com/ahkscript/libcrypt.ahk/blob/master/build/libcrypt.ahk)
+- [jNizM](https://github.com/jNizM/AHK_CNG) for the Class_CNG.ahk script
+- and of course the AHK community, the OBS websocket and OBS Studio guys.
 
 Please support them and if I you are happy with this tool in particular, please be kind to support me here:
 

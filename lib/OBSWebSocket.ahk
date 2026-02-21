@@ -2,11 +2,12 @@
  * Lib: OBSWebSocket.ahk
  *     OBS Studio WebScocket library for AutoHotkey
  * Version:
- *     v2.0.7 [updated 2024-06-09 (YYYY-MM-DD)]
+ *     v2.2.0 [updated on 2026-02-21 (YYYY-MM-DD)]
  * Requirements:
  *     AutoHotkey v2.0+
  *     JSON.ahk - https://github.com/thqby/ahk2_lib/blob/master/JSON.ahk
  *     Class_CNG.ahk - https://github.com/jNizM/AHK_CNG
+ *     WebSocket.ahk - https://github.com/thqby/ahk2_lib/blob/master/WebSocket.ahk
  * OBS WebSocket specifications:
  *     https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md
  * Installation:
@@ -19,8 +20,9 @@
 #Requires AutoHotkey >=2.0-
 #Include JSON.ahk
 #Include Class_CNG.ahk
+#Include WebSocket.ahk
 
-class OBSWebSocket {
+class OBSWebSocket extends WebSocket {
 	static WebSocketOpCode := {
 		Hello: 0,
 		Identify: 1,
@@ -114,6 +116,7 @@ class OBSWebSocket {
 	_websocketUrl := ""
 	_isSilent := 1
 	_console := false
+	_ws := 0
 
 	__New(websocketUrl, pwd := 0, subscriptions := 0, isSilent := 1) {
 		this._eventSubscriptions := subscriptions
@@ -130,23 +133,7 @@ class OBSWebSocket {
 	}
 
 	__CreateBasicWS() {
-		this._IEGui := Gui()
-		this.explorer := this._IEGui.Add("ActiveX", "", "Shell.Explorer").Value
-		this.explorer.Navigate("about:<!DOCTYPE html><meta http-equiv='X-UA-Compatible' content='IE=edge'><body></body>")
-		while (this.explorer.ReadyState < 4)
-			Sleep(50)
-		this.document := this.explorer.document
-		this.document.parentWindow.ahk_event := this.__WSEvent.Bind(this)
-		this.document.parentWindow.ahk_ws_url := this._websocketUrl
-		Script := this.document.createElement("script")
-		Script.text := "ws = new WebSocket(ahk_ws_url);`n"
-		. "ws.onopen = function(event){ ahk_event('OnOpen', event); };`n"
-		. "ws.onclose = function(event){ ahk_event('OnClose', event); };`n"
-		. "ws.onerror = function(event){ ahk_event('OnError', event); };`n"
-		. "ws.onmessage = function(event){ ahk_event('OnMessage', event); };`n"
-		. "sendData = function(data) { try { ws.send(data); } catch(e) { ahk_event('OnError', e); } }`n"
-
-		this.document.body.appendChild(Script)
+		this._ws := super.__New(this._websocketUrl)
 	}
 
 	__CallFunction(functionName, arg:="") {
@@ -167,14 +154,9 @@ class OBSWebSocket {
 		return ""
 	}
 
-	__WSEvent(EventName, Event)	{
-		if (this.HasMethod(EventName))
-			this.%EventName%(Event)
-	}
-
 	__TrayTipMsg(msg, title, icon, mute := true) {
 		if (!this._isSilent) {
-			TrayTip(msg, title, icon | (mute ? 16 : 0))
+			TrayTip(msg, title, (mute ? 16 : 0))
 		}
 	}
 
@@ -194,12 +176,12 @@ class OBSWebSocket {
 		MsgBox(JSON.stringify(obj))
 	}
 
-	OnOpen(Event) {
+	onOpen() {
 		this._hasWS := 1
 	}
 
-	OnMessage(Event) {
-		value := MapToObject(JSON.parse(Event.data))
+	onMessage(message) {
+		value := MapToObject(JSON.parse(message))
 		if (this._console) {
 			this._console.log("Received:`n" . JSON.stringify(value))
 		}
@@ -239,27 +221,27 @@ class OBSWebSocket {
 		}
 	}
 
-	OnClose(Event) {
+	onClose(status, reason) {
+		this._hasWS := 0
 		this.__TrayTipMsg("Websocket Closed", "OBSWebSocket", "Iconi")
-		this.__DestroyWS()
 	}
 
-	OnError(Event) {
-		this.__TrayTipMsg("Websocket Error " . Event, "OBSWebSocket", "Iconx")
-		this.__DestroyWS()
-	}
+	; OnError(Event) {
+	; 	super.onError()
+	; 	this.__TrayTipMsg("Websocket Error " . Event, "OBSWebSocket", "Iconx")
+	; }
 
 	Send(Data)
 	{
 		state := this.GetWebSocketState()
 		if (state = 1) {
-			this.document.parentWindow.sendData(Data)
+			this.sendText(Data)
 			return
 		}
 		stateText := this.__GetWebSocketStateString(state)
 		this.__TrayTipMsg("Websocket state is " . stateText, "OBSWebSocket", "Iconi")
 		if (this.RetryConnection() = 1) {
-			this.document.parentWindow.sendData(Data)
+			this.sendText(Data)
 		}
 	}
 
@@ -280,10 +262,7 @@ class OBSWebSocket {
 	}
 
 	GetWebSocketState() {
-		if(!this._IEGui || !this.document || !this.document.parentWindow || !this._hasWS) {
-			return 3 ;WebSocket.readyState.CLOSED
-		}
-		return this.document.parentWindow.ws.readyState
+		return this.readyState
 	}
 
 	SetSilentMode(mode := 1) {
@@ -295,24 +274,8 @@ class OBSWebSocket {
 	}
 
 
-	__Delete() {
-		this.__TrayTipMsg("Exiting...", "OBSWebSocket", "Iconi")
-		this.__DestroyWS()
-		ExitApp
-	}
-
 	__GetWebSocketStateString(readyState) {
 		return ["connecting","open","closing","closed"][readyState+1]
-	}
-
-	__DestroyWS()
-	{
-		if this._IEGui
-		{
-			this.document.close()
-			this._IEGui.Destroy()
-		}
-		this._hasWS := 0
 	}
 
 	__StringToBase64(String, Encoding := "UTF-8")
